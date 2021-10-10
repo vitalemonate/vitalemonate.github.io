@@ -57,7 +57,9 @@ print("-"*8 + "data.csv处理完成" + "-"*8)
 
 # 读取data目录下的图像的名称
 old_name_list=os.listdir("./data")
-old_name_list.sort()
+# sort将图像按字符串顺序排序，其实应该将文件按数字排序，即去掉后缀再排序
+# old_name_list.sort()
+old_name_list.sort(key = lambda x: int(x[:-4])) ##文件名按数字排序
 
 # 读取处理后的data.csv中的filename列为图像的新名称
 new_name_file=pd.read_csv('./data.csv',usecols=['filename'])
