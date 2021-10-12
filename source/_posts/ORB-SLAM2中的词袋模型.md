@@ -2,7 +2,7 @@
 title: ORB-SLAM2中的词袋模型
 date: 2021-10-11 21:36:42
 tags:
-categories: 其他
+categories: SLAM
 ---
 #  概述
 学习和开发ORB-SLAM2两年以来还未深入学习过词袋模型的实现，恰好最近在学习OV2SLAM的在线词袋，就回头对比学习一下ORB-SLAM2中词袋的实现与应用，本文的内容主要是从[小六的注释版ORB-SLAM2的讲义](https://github.com/electech6/ORB_SLAM2_detailed_comments/blob/master/%E3%80%8AORB-SLAM2%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E3%80%8B%E5%AD%A6%E4%B9%A0%E6%89%8B%E5%86%8C.pdf)中搬运过来的。
