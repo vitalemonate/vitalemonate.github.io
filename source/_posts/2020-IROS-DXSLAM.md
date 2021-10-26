@@ -46,7 +46,7 @@ categories: SLAM
 * 首先对每张图像使用HF-Net提取keypoint和对应的local descriptor
 
 * 对每个pair的相邻帧，使用暴力匹配的方法进行匹配，将匹配的点对划分到**已有的同一个叶子结点**中，不匹配的feature**增加一个新的结点**。其中每个结点按照keypoint的得分**最多保留前300个**
-* 使用FBoW来构建词袋，训练的词袋是二进制的，可以加快ORB-SLAM2系统初始化时加载词袋的速度**(6s -> 40ms)**
+* 使用FBoW来构建词袋，训练的词袋是二进制的，可以加快ORB-SLAM2系统初始化时加载词袋的速度(**6s -> 40ms**)
 
 ## 使用global descriptor进行重定位
 这里涉及到获得图像global descriptor的两种方法：
