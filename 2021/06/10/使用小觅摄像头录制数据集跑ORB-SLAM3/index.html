@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述本文档主要记录使用小觅摄像头录制数据集跑ORB-SLAM3的流程，其中录制的数据集需要经过处理，打包成ORB-SLAM3要求的格式才可以，之前都是手动用excel来调整格式，最近写了两个Python脚本对数据进行处理，提高了工作效率，特此记录">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用小觅摄像头录制数据集跑ORB-SLAM3">
+<meta property="og:url" content="http://example.com/2021/06/10/%E4%BD%BF%E7%94%A8%E5%B0%8F%E8%A7%85%E6%91%84%E5%83%8F%E5%A4%B4%E5%BD%95%E5%88%B6%E6%95%B0%E6%8D%AE%E9%9B%86%E8%B7%91ORB-SLAM3/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述本文档主要记录使用小觅摄像头录制数据集跑ORB-SLAM3的流程，其中录制的数据集需要经过处理，打包成ORB-SLAM3要求的格式才可以，之前都是手动用excel来调整格式，最近写了两个Python脚本对数据进行处理，提高了工作效率，特此记录">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig0.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig1.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig2.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig3.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig4.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig5.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig6.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig7.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig8.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig9.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig10.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig11.png">
+<meta property="og:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig12.png">
+<meta property="article:published_time" content="2021-06-10T09:55:38.000Z">
+<meta property="article:modified_time" content="2021-10-11T12:30:53.710Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig0.png">
+
+<link rel="canonical" href="http://example.com/2021/06/10/%E4%BD%BF%E7%94%A8%E5%B0%8F%E8%A7%85%E6%91%84%E5%83%8F%E5%A4%B4%E5%BD%95%E5%88%B6%E6%95%B0%E6%8D%AE%E9%9B%86%E8%B7%91ORB-SLAM3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>使用小觅摄像头录制数据集跑ORB-SLAM3 | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/10/%E4%BD%BF%E7%94%A8%E5%B0%8F%E8%A7%85%E6%91%84%E5%83%8F%E5%A4%B4%E5%BD%95%E5%88%B6%E6%95%B0%E6%8D%AE%E9%9B%86%E8%B7%91ORB-SLAM3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用小觅摄像头录制数据集跑ORB-SLAM3
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-06-10 17:55:38" itemprop="dateCreated datePublished" datetime="2021-06-10T17:55:38+08:00">2021-06-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-10-11 20:30:53" itemprop="dateModified" datetime="2021-10-11T20:30:53+08:00">2021-10-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文档主要记录使用小觅摄像头录制数据集跑ORB-SLAM3的流程，其中录制的数据集需要经过处理，打包成ORB-SLAM3要求的格式才可以，之前都是手动用excel来调整格式，最近写了两个Python脚本对数据进行处理，提高了工作效率，特此记录</p>
+<span id="more"></span>
+
+<h1 id="使用小觅摄像头录制数据集"><a href="#使用小觅摄像头录制数据集" class="headerlink" title="使用小觅摄像头录制数据集"></a>使用小觅摄像头录制数据集</h1><p>  运行小觅SDK目录下samples/_output/bin/dataset目录下的 record即可进行录制</p>
+<ul>
+<li><p>可以在samples/dataset/record.cc中的main函数中cam.Open(params)后添加3行代码来控制曝光值</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig0.png">
+</div></li>
+<li><p>输出为一个dataset目录，其中包括left目录以及一个motion.txt，其中left目录中存放的是图像以及图像的索引文件stream.txt，motion.txt中存放的是IMU数据</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig1.png">
+</div></li>
+<li><p>仿照EuRoC数据集的目录格式将dataset下的目录结构进行更改，并分别在cam0以及imu0目录下存入对应的脚本, 其中cam0目录下的data.csv为原steam.txt，imu0目录下的data.csv为原motion.txt</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig2.png">
+</div></li>
+</ul>
+<h1 id="处理图像数据"><a href="#处理图像数据" class="headerlink" title="处理图像数据"></a>处理图像数据</h1><h2 id="camera-script-py"><a href="#camera-script-py" class="headerlink" title="camera_script.py"></a>camera_script.py</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 参考</span></span><br><span class="line"><span class="comment"># https://cloud.tencent.com/developer/article/1687784</span></span><br><span class="line"><span class="comment"># https://blog.csdn.net/weixin_43245453/article/details/90084328</span></span><br><span class="line"><span class="comment"># https://blog.csdn.net/sinat_34615726/article/details/62891393</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> csv</span><br><span class="line"><span class="keyword">from</span> itertools <span class="keyword">import</span> islice</span><br><span class="line"></span><br><span class="line"><span class="comment"># 对原始时间戳进行处理并按照euroc的格式构建data.csv</span></span><br><span class="line"><span class="comment"># 注意这里的列句为&quot; timestamp&quot;而不是&quot;timestamp&quot;(无语...)</span></span><br><span class="line">original_file=pd.read_csv(<span class="string">&#x27;./data.csv&#x27;</span>,usecols=[<span class="string">&#x27; timestamp&#x27;</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 处理后的时间戳：将单位从10us转为1ns</span></span><br><span class="line">timestamp_list=original_file[<span class="string">&#x27; timestamp&#x27;</span>].values.tolist()</span><br><span class="line">timestamp_list=[<span class="built_in">int</span>(time*<span class="number">1e4</span>)  <span class="keyword">for</span> time <span class="keyword">in</span> timestamp_list]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新的图像名：&quot;时间戳.png&quot;</span></span><br><span class="line">filename_list=[<span class="built_in">str</span>(time)+<span class="string">&quot;.png&quot;</span>  <span class="keyword">for</span> time <span class="keyword">in</span> timestamp_list]</span><br><span class="line"></span><br><span class="line">processed_dict=&#123;<span class="string">&quot;#timestamp&quot;</span>: timestamp_list, <span class="string">&quot;filename&quot;</span>: filename_list&#125;</span><br><span class="line">dataframe=pd.DataFrame(processed_dict)</span><br><span class="line">dataframe.to_csv(<span class="string">&#x27;./data.csv&#x27;</span>, columns=[<span class="string">&quot;#timestamp&quot;</span>, <span class="string">&quot;filename&quot;</span>], index=<span class="literal">False</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span>*<span class="number">8</span> + <span class="string">&quot;data.csv处理完成&quot;</span> + <span class="string">&quot;-&quot;</span>*<span class="number">8</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取data目录下的图像的名称</span></span><br><span class="line">old_name_list=os.listdir(<span class="string">&quot;./data&quot;</span>)</span><br><span class="line"><span class="comment"># sort将图像按字符串顺序排序，其实应该将文件按数字排序，即去掉后缀再排序</span></span><br><span class="line"><span class="comment"># old_name_list.sort()</span></span><br><span class="line">old_name_list.sort(key = <span class="keyword">lambda</span> x: <span class="built_in">int</span>(x[:-<span class="number">4</span>])) <span class="comment">##文件名按数字排序</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取处理后的data.csv中的filename列为图像的新名称</span></span><br><span class="line">new_name_file=pd.read_csv(<span class="string">&#x27;./data.csv&#x27;</span>,usecols=[<span class="string">&#x27;filename&#x27;</span>])</span><br><span class="line">new_name_list=new_name_file[<span class="string">&#x27;filename&#x27;</span>].values.tolist()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建一个用于批量重命名的文件rename.csv，用于存放图像对应的新旧名称</span></span><br><span class="line">rename_dict=&#123;<span class="string">&quot;old_name&quot;</span>: old_name_list, <span class="string">&quot;new_name&quot;</span>: new_name_list&#125;</span><br><span class="line">dataframe=pd.DataFrame(rename_dict)</span><br><span class="line">dataframe.to_csv(<span class="string">&quot;./rename.csv&quot;</span>, columns=[<span class="string">&quot;old_name&quot;</span>, <span class="string">&quot;new_name&quot;</span>], index=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 根据rename.csv文件对data下的文件进行批量重命名</span></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;./rename.csv&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = csv.reader(f)</span><br><span class="line">    <span class="comment"># 使用islice是为了跳过rename.csv中第一行标题</span></span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> islice(lines, <span class="number">1</span>, <span class="literal">None</span>):</span><br><span class="line">        os.rename(<span class="string">&quot;./data/&quot;</span>+line[<span class="number">0</span>], <span class="string">&quot;./data/&quot;</span>+line[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span>*<span class="number">8</span> + <span class="string">&quot;图像批量重命名完成&quot;</span> + <span class="string">&quot;-&quot;</span>*<span class="number">8</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="运行脚本处理图像数据"><a href="#运行脚本处理图像数据" class="headerlink" title="运行脚本处理图像数据"></a>运行脚本处理图像数据</h2><p>在cam0目录下运行python3 camera_script.py, 这时data目录下的图像根据rename.csv的内容重命名</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig3.png">
+</div>
+
+<h2 id="脚本主要步骤"><a href="#脚本主要步骤" class="headerlink" title="脚本主要步骤"></a>脚本主要步骤</h2><h3 id="处理时间戳"><a href="#处理时间戳" class="headerlink" title="处理时间戳"></a>处理时间戳</h3><p>根据相邻的两个图像的时间戳的差可以确定小觅摄像头录制的数据集的时间戳单位为<strong>10 us</strong>(很神奇)，而EuRoC的数据时间戳为ns，所以要手动将时间戳单位调整为以ns。因此要将时间戳的值乘以1e4</p>
+<p>此外，按照ORB-SLAM3读取图像的要求，图像的命名规则为”时间戳.png”，因此要将timestamp列的内容加上”.png”后作为新的图像名</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig4.png">
+</div>
+
+<h3 id="批量重命名"><a href="#批量重命名" class="headerlink" title="批量重命名"></a>批量重命名</h3><p>根据rename.csv的内容对data下的图像进行批量重命名，重命名后rename.csv文件就没有用了</p>
+<h1 id="处理IMU数据"><a href="#处理IMU数据" class="headerlink" title="处理IMU数据"></a>处理IMU数据</h1><h2 id="imu-script-py"><a href="#imu-script-py" class="headerlink" title="imu_script.py"></a>imu_script.py</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line">imu_file = <span class="string">&quot;./data.csv&quot;</span></span><br><span class="line">data = pd.read_csv(imu_file, usecols=[<span class="string">&quot; timestamp&quot;</span>, <span class="string">&quot; accel_x&quot;</span>, <span class="string">&quot; accel_y&quot;</span>, <span class="string">&quot; accel_z&quot;</span>, <span class="string">&quot; gyro_x&quot;</span>, <span class="string">&quot; gyro_y&quot;</span>, <span class="string">&quot; gyro_z&quot;</span>])</span><br><span class="line">timestamp_list = data[<span class="string">&quot; timestamp&quot;</span>].values.tolist()</span><br><span class="line"></span><br><span class="line">accel_x_list = data[<span class="string">&quot; accel_x&quot;</span>].values.tolist()</span><br><span class="line">accel_y_list = data[<span class="string">&quot; accel_y&quot;</span>].values.tolist()</span><br><span class="line">accel_z_list = data[<span class="string">&quot; accel_z&quot;</span>].values.tolist()</span><br><span class="line"></span><br><span class="line">gyro_x_list = data[<span class="string">&quot; gyro_x&quot;</span>].values.tolist()</span><br><span class="line">gyro_y_list = data[<span class="string">&quot; gyro_y&quot;</span>].values.tolist()</span><br><span class="line">gyro_z_list = data[<span class="string">&quot; gyro_z&quot;</span>].values.tolist()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加速度计的各个分量乘9.8</span></span><br><span class="line">old_acc_list = [accel_x_list, accel_y_list, accel_z_list]</span><br><span class="line">new_acc_list = [[value * <span class="number">9.8</span> <span class="keyword">for</span> value <span class="keyword">in</span> demision] <span class="keyword">for</span> demision <span class="keyword">in</span> old_acc_list]</span><br><span class="line"></span><br><span class="line">new_acc_x_list, new_acc_y_list, new_acc_z_list = new_acc_list[<span class="number">0</span>],new_acc_list[<span class="number">1</span>],new_acc_list[<span class="number">2</span>]</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span>*<span class="number">16</span>+<span class="string">&quot;加速度计的各个分量乘9.8&quot;</span>+<span class="string">&quot;-&quot;</span>*<span class="number">16</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 陀螺仪的各个分量乘以PI()除以180</span></span><br><span class="line">old_gyro_list = [gyro_x_list,gyro_y_list,gyro_z_list]</span><br><span class="line">new_gyro_list = [[value*math.pi/<span class="number">180</span>  <span class="keyword">for</span> value <span class="keyword">in</span> demision] <span class="keyword">for</span> demision <span class="keyword">in</span> old_gyro_list]</span><br><span class="line"></span><br><span class="line">new_gyro_x_list, new_gyro_y_list, new_gyro_z_list = new_gyro_list[<span class="number">0</span>],new_gyro_list[<span class="number">1</span>],new_gyro_list[<span class="number">2</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span>*<span class="number">16</span>+<span class="string">&quot;陀螺仪的各个分量乘以PI()除以180&quot;</span>+<span class="string">&quot;-&quot;</span>*<span class="number">16</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 对陀螺仪数据进行插值并舍弃第一个IMU数据</span></span><br><span class="line">zipped_data = <span class="built_in">zip</span>(timestamp_list, new_acc_x_list, new_acc_y_list, new_acc_z_list, new_gyro_x_list, new_gyro_y_list, new_gyro_z_list)</span><br><span class="line">zipped_data_list = <span class="built_in">list</span>(zipped_data)</span><br><span class="line">data_length = <span class="built_in">len</span>(zipped_data_list)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 存放插值后的陀螺仪</span></span><br><span class="line">new_gyro=[]</span><br><span class="line"><span class="keyword">for</span> index, single_data <span class="keyword">in</span> <span class="built_in">enumerate</span>(zipped_data_list):</span><br><span class="line">    <span class="keyword">if</span> index == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    <span class="keyword">elif</span> index == data_length - <span class="number">1</span>:</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    single_data=<span class="built_in">list</span>(single_data)    </span><br><span class="line"></span><br><span class="line">    cur_timestamp = zipped_data_list[index][<span class="number">0</span>]</span><br><span class="line">    prev_timestamp = zipped_data_list[index - <span class="number">1</span>][<span class="number">0</span>]</span><br><span class="line">    next_timestamp = zipped_data_list[index + <span class="number">1</span>][<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    prev_gyro = np.array(zipped_data_list[index - <span class="number">1</span>][<span class="number">4</span>:<span class="number">7</span>])</span><br><span class="line">    next_gyro = np.array(zipped_data_list[index + <span class="number">1</span>][<span class="number">4</span>:<span class="number">7</span>])</span><br><span class="line"></span><br><span class="line">    interpolation_factor = (next_timestamp - cur_timestamp)/(next_timestamp - prev_timestamp)</span><br><span class="line">    interpolated_gyro = interpolation_factor * prev_gyro + (<span class="number">1</span> - interpolation_factor) * next_gyro</span><br><span class="line"></span><br><span class="line">    new_gyro.append(<span class="built_in">list</span>(interpolated_gyro))</span><br><span class="line"></span><br><span class="line"><span class="comment"># zipped_data_list中的各组数据为元组，不可修改，要修改得先转为list</span></span><br><span class="line">zipped_data_list = [<span class="built_in">list</span>(item) <span class="keyword">for</span> item <span class="keyword">in</span> zipped_data_list]</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> index, single_data <span class="keyword">in</span> <span class="built_in">enumerate</span>(zipped_data_list):</span><br><span class="line">    <span class="keyword">if</span> index == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    <span class="keyword">elif</span> index == data_length - <span class="number">1</span>:</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    single_data[<span class="number">4</span>:<span class="number">7</span>]=new_gyro[index - <span class="number">1</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除第一个、最后一个IMU数据以及加速度计陀螺仪值均为0的数据</span></span><br><span class="line"><span class="keyword">del</span> zipped_data_list[<span class="number">0</span>], zipped_data_list[-<span class="number">1</span>]</span><br><span class="line"><span class="keyword">for</span> index, single_data <span class="keyword">in</span> <span class="built_in">enumerate</span>(zipped_data_list):</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">any</span>(single_data[<span class="number">1</span>:<span class="number">7</span>]):</span><br><span class="line">        <span class="keyword">del</span> zipped_data_list[index]</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span>*<span class="number">16</span>+<span class="string">&quot;完成陀螺仪的插值&quot;</span>+<span class="string">&quot;-&quot;</span>*<span class="number">16</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 得到经过处理后的数据</span></span><br><span class="line">timestamp_list, new_acc_x_list, new_acc_y_list, new_acc_z_list, new_gyro_x_list, new_gyro_y_list, new_gyro_z_list = [<span class="built_in">list</span>(item) <span class="keyword">for</span> item <span class="keyword">in</span> <span class="built_in">zip</span>(*zipped_data_list)]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调整时间戳的单位</span></span><br><span class="line">timestamp_list = [<span class="built_in">int</span>(time*<span class="number">1e4</span>) <span class="keyword">for</span> time <span class="keyword">in</span> timestamp_list]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将调整后的数据写入文件</span></span><br><span class="line">data_dict=&#123;<span class="string">&quot;#timestamp&quot;</span>: timestamp_list, <span class="string">&quot;gyro_x&quot;</span>: new_gyro_x_list, <span class="string">&quot;gyro_y&quot;</span>: new_gyro_y_list, <span class="string">&quot;gyro_z&quot;</span>: new_gyro_z_list,</span><br><span class="line">	 <span class="string">&quot;accel_x&quot;</span>: new_acc_x_list, <span class="string">&quot;accel_y&quot;</span>: new_acc_y_list, <span class="string">&quot;accel_z&quot;</span>: new_acc_z_list&#125;</span><br><span class="line">dataframe=pd.DataFrame(data_dict)</span><br><span class="line">dataframe.to_csv(imu_file, columns=[<span class="string">&quot;#timestamp&quot;</span>, <span class="string">&quot;gyro_x&quot;</span>, <span class="string">&quot;gyro_y&quot;</span>, <span class="string">&quot;gyro_z&quot;</span>, <span class="string">&quot;accel_x&quot;</span>, <span class="string">&quot;accel_y&quot;</span>, <span class="string">&quot;accel_z&quot;</span>], index=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span>*<span class="number">16</span>+<span class="string">&quot;完成IMU数据的全部处理工作&quot;</span>+<span class="string">&quot;-&quot;</span>*<span class="number">16</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="运行脚本处理IMU数据"><a href="#运行脚本处理IMU数据" class="headerlink" title="运行脚本处理IMU数据"></a>运行脚本处理IMU数据</h2><p>在imu0目录下运行python3 imu_script.py, data.csv中的IMU数据就转为ORB-SLAM3所需的格式</p>
+<h2 id="脚本主要步骤-1"><a href="#脚本主要步骤-1" class="headerlink" title="脚本主要步骤"></a>脚本主要步骤</h2><h3 id="处理加速度计和陀螺仪数据"><a href="#处理加速度计和陀螺仪数据" class="headerlink" title="处理加速度计和陀螺仪数据"></a>处理加速度计和陀螺仪数据</h3><ul>
+<li><p>对加速度计的各个分量乘以9.8，并将陀螺仪的各个分量乘以PI()除以180</p>
+</li>
+<li><p>将陀螺仪的值根据时间戳进行线性插值 interpolated_gyro = (next_time - cur_time)/(next_time - prev_time)*prev_gyro + (cur_time - prev_time)/(next_time - prev_time)*next_gyro，舍弃第一个以及最后一个IMU数据</p>
+</li>
+<li><p>这样数据的结果是隔一行全为0，这些数据需要剔除掉，也可以使用excel来剔除这些数据</p>
+<ul>
+<li><p>CTRL + H将所有的 0（单元格匹配） 替代为空</p>
+</li>
+<li><p>选中所有数据的范围，在“查找和选择” 一栏选择定位 “空值”</p>
+</li>
+<li><p>右键删除，点击删除整行</p>
+</li>
+</ul>
+</li>
+<li><p>按照处理图像时间戳的方法处理IMU时间戳，即乘以1e4</p>
+</li>
+<li><p>调换加速度计和陀螺仪的位置，最终IMU数据的第一行为 #timestamp(按照和euroc数据集一样的格式加#) gyro_x  gyro_y gyro_z accel_x accel_y accel_z</p>
+</li>
+</ul>
+<h1 id="Run-ORB-SLAM3"><a href="#Run-ORB-SLAM3" class="headerlink" title="Run ORB-SLAM3"></a>Run ORB-SLAM3</h1><h2 id="使用小觅SDK获取相机以及IMU的相关参数"><a href="#使用小觅SDK获取相机以及IMU的相关参数" class="headerlink" title="使用小觅SDK获取相机以及IMU的相关参数"></a>使用小觅SDK获取相机以及IMU的相关参数</h2><h3 id="IMU相关参数"><a href="#IMU相关参数" class="headerlink" title="IMU相关参数"></a>IMU相关参数</h3><p>在小觅SDK目录下运行./samples/_output/bin/get_imu_params会在当前目录下生成一个名为imu_params.params的文件存放相机和IMU的外参（单位mm）以及IMU内参（但是不知道为什么输出的IMU noise和bias的随机游走都是0）</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig5.png">
+</div>
+
+<h4 id="IMU内参说明"><a href="#IMU内参说明" class="headerlink" title="IMU内参说明"></a>IMU内参说明</h4><div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig6.png">
+</div>
+
+<p>由于上一小节用SDK得到的IMU的随机游走和噪声项为0, 在这种配置下跑ORB-SLAM3会失败，因此IMU的内参采用了之前的工程文件中保留的参数，具体的值为</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig7.png">
+</div>
+
+<h4 id="IMU和左目相机的外参"><a href="#IMU和左目相机的外参" class="headerlink" title="IMU和左目相机的外参"></a>IMU和左目相机的外参</h4><div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig8.png">
+</div>
+
+<h3 id="相机相关参数"><a href="#相机相关参数" class="headerlink" title="相机相关参数"></a>相机相关参数</h3><p>在小觅SDK目录下运行./samples/output/bin/get_img_params会在当前文件夹下生成一个新的文件image_params.params（这里显示的内参是自己使用小觅的标定工具标定的结果，不是原来的内参值，由于不确定标定是否精准，所以在跑ORB-SLAM3时采用旧的内参值）</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig9.png">
+</div>
+
+<p>旧的相机内参</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig10.png">
+</div>
+
+<h2 id="配置ORB-SLAM3的相关文件"><a href="#配置ORB-SLAM3的相关文件" class="headerlink" title="配置ORB-SLAM3的相关文件"></a>配置ORB-SLAM3的相关文件</h2><ul>
+<li><p>在Examples/Monocular-Inertial目录下新建小觅摄像头的配置文件MYNT.yaml并将上一节得到的IMU以及相机参数填入MYNT.yaml</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig11.png">
+</div></li>
+<li><p>在Examples/Monocular-Inertial/下新建目录MYNT——Timestamps存放存储图像的时间戳的文件</p>
+</li>
+<li><p>根据mono_inertial_euroc.cc的main函数开头处的提示修改词袋路径，数据集路径，配置路径，地图路径以及图像时间戳文件的路径即可用小觅录制的数据集跑ORB-SLAM3</p>
+<div align="center">
+<img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig12.png">
+</div></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/08/ORB-SLAM3-Track%E6%B5%81%E7%A8%8B/" rel="prev" title="ORB-SLAM3 Track流程">
+      <i class="fa fa-chevron-left"></i> ORB-SLAM3 Track流程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/14/AlexNet/" rel="next" title="AlexNet">
+      AlexNet <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%B0%8F%E8%A7%85%E6%91%84%E5%83%8F%E5%A4%B4%E5%BD%95%E5%88%B6%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">2.</span> <span class="nav-text">使用小觅摄像头录制数据集</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E5%9B%BE%E5%83%8F%E6%95%B0%E6%8D%AE"><span class="nav-number">3.</span> <span class="nav-text">处理图像数据</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#camera-script-py"><span class="nav-number">3.1.</span> <span class="nav-text">camera_script.py</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E8%84%9A%E6%9C%AC%E5%A4%84%E7%90%86%E5%9B%BE%E5%83%8F%E6%95%B0%E6%8D%AE"><span class="nav-number">3.2.</span> <span class="nav-text">运行脚本处理图像数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%84%9A%E6%9C%AC%E4%B8%BB%E8%A6%81%E6%AD%A5%E9%AA%A4"><span class="nav-number">3.3.</span> <span class="nav-text">脚本主要步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E6%97%B6%E9%97%B4%E6%88%B3"><span class="nav-number">3.3.1.</span> <span class="nav-text">处理时间戳</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%B9%E9%87%8F%E9%87%8D%E5%91%BD%E5%90%8D"><span class="nav-number">3.3.2.</span> <span class="nav-text">批量重命名</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%84%E7%90%86IMU%E6%95%B0%E6%8D%AE"><span class="nav-number">4.</span> <span class="nav-text">处理IMU数据</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#imu-script-py"><span class="nav-number">4.1.</span> <span class="nav-text">imu_script.py</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E8%84%9A%E6%9C%AC%E5%A4%84%E7%90%86IMU%E6%95%B0%E6%8D%AE"><span class="nav-number">4.2.</span> <span class="nav-text">运行脚本处理IMU数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%84%9A%E6%9C%AC%E4%B8%BB%E8%A6%81%E6%AD%A5%E9%AA%A4-1"><span class="nav-number">4.3.</span> <span class="nav-text">脚本主要步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E5%8A%A0%E9%80%9F%E5%BA%A6%E8%AE%A1%E5%92%8C%E9%99%80%E8%9E%BA%E4%BB%AA%E6%95%B0%E6%8D%AE"><span class="nav-number">4.3.1.</span> <span class="nav-text">处理加速度计和陀螺仪数据</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Run-ORB-SLAM3"><span class="nav-number">5.</span> <span class="nav-text">Run ORB-SLAM3</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%B0%8F%E8%A7%85SDK%E8%8E%B7%E5%8F%96%E7%9B%B8%E6%9C%BA%E4%BB%A5%E5%8F%8AIMU%E7%9A%84%E7%9B%B8%E5%85%B3%E5%8F%82%E6%95%B0"><span class="nav-number">5.1.</span> <span class="nav-text">使用小觅SDK获取相机以及IMU的相关参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#IMU%E7%9B%B8%E5%85%B3%E5%8F%82%E6%95%B0"><span class="nav-number">5.1.1.</span> <span class="nav-text">IMU相关参数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#IMU%E5%86%85%E5%8F%82%E8%AF%B4%E6%98%8E"><span class="nav-number">5.1.1.1.</span> <span class="nav-text">IMU内参说明</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IMU%E5%92%8C%E5%B7%A6%E7%9B%AE%E7%9B%B8%E6%9C%BA%E7%9A%84%E5%A4%96%E5%8F%82"><span class="nav-number">5.1.1.2.</span> <span class="nav-text">IMU和左目相机的外参</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E6%9C%BA%E7%9B%B8%E5%85%B3%E5%8F%82%E6%95%B0"><span class="nav-number">5.1.2.</span> <span class="nav-text">相机相关参数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEORB-SLAM3%E7%9A%84%E7%9B%B8%E5%85%B3%E6%96%87%E4%BB%B6"><span class="nav-number">5.2.</span> <span class="nav-text">配置ORB-SLAM3的相关文件</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

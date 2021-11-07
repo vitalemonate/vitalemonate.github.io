@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="主要贡献 回顾了VO的基础，讨论了将深度学习方法与对极几何(2D-2D)以及PnP(3D-2D)进行整合的方法  训练了两个CNN分别用来估计单帧图像的深度图以及两帧图像间的光流  设计一个简单但是鲁棒的算法DF-VO，在KITTI ODOMETRY上性能超过纯深度学习的方法以及基于几何的方法，并且不会有尺度漂移问题   p.s.:总的来说，这篇文章提出了结合深度学习与传统方法做VO的方法，十分值">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2020 ICRA DF-VO">
+<meta property="og:url" content="http://example.com/2021/06/14/2020-ICRA-DF-VO/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="主要贡献 回顾了VO的基础，讨论了将深度学习方法与对极几何(2D-2D)以及PnP(3D-2D)进行整合的方法  训练了两个CNN分别用来估计单帧图像的深度图以及两帧图像间的光流  设计一个简单但是鲁棒的算法DF-VO，在KITTI ODOMETRY上性能超过纯深度学习的方法以及基于几何的方法，并且不会有尺度漂移问题   p.s.:总的来说，这篇文章提出了结合深度学习与传统方法做VO的方法，十分值">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig0.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig1.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig3.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig2.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig4.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig5.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig6.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig6.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig8.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig9.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig10.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig11.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig12.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig13.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig14.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig15.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig16.png">
+<meta property="article:published_time" content="2021-06-14T09:08:59.000Z">
+<meta property="article:modified_time" content="2021-10-11T12:30:53.710Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/2020%20ICRA%20DF-VO/fig0.png">
+
+<link rel="canonical" href="http://example.com/2021/06/14/2020-ICRA-DF-VO/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>2020 ICRA DF-VO | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/14/2020-ICRA-DF-VO/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          2020 ICRA DF-VO
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-06-14 17:08:59" itemprop="dateCreated datePublished" datetime="2021-06-14T17:08:59+08:00">2021-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-10-11 20:30:53" itemprop="dateModified" datetime="2021-10-11T20:30:53+08:00">2021-10-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/depth-estimation/" itemprop="url" rel="index"><span itemprop="name">depth estimation</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="主要贡献"><a href="#主要贡献" class="headerlink" title="主要贡献"></a>主要贡献</h1><ul>
+<li><p>回顾了VO的基础，讨论了将深度学习方法与对极几何(2D-2D)以及PnP(3D-2D)进行整合的方法</p>
+</li>
+<li><p>训练了两个CNN分别用来估计单帧图像的深度图以及两帧图像间的光流</p>
+</li>
+<li><p>设计一个简单但是鲁棒的算法DF-VO，在KITTI ODOMETRY上性能超过纯深度学习的方法以及基于几何的方法，并且不会有尺度漂移问题</p>
+</li>
+</ul>
+<p>p.s.:总的来说，这篇文章提出了结合深度学习与传统方法做VO的方法，十分值得学习，但是<strong>作者只提供了用于evaluate的代码，没有提供训练代码</strong>，因此学习暂时只停留在论文的学习层面</p>
+<span id="more"></span>
+
+<h1 id="基于几何的方法"><a href="#基于几何的方法" class="headerlink" title="基于几何的方法"></a>基于几何的方法</h1><h2 id="对极几何"><a href="#对极几何" class="headerlink" title="对极几何"></a>对极几何</h2><p>在已知2D-2D匹配关系的情况下，可以通过对极几何的方法求解相机的运动</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig0.png">
+</div>
+
+<p>存在的问题：</p>
+<ul>
+<li><p>分解得到的尺度信息是没有尺度信息的</p>
+</li>
+<li><p>无法分解纯旋转的运动</p>
+</li>
+<li><p>如果运动较小，分解得到的解不稳定</p>
+</li>
+</ul>
+<h2 id="PnP"><a href="#PnP" class="headerlink" title="PnP"></a>PnP</h2><p>使用PnP估计帧间运动需要知道3D-2D匹配关系以及3D点的坐标</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig1.png">
+</div>
+
+<h1 id="DF-VO"><a href="#DF-VO" class="headerlink" title="DF-VO"></a>DF-VO</h1><p>作者提出了一个结合深度学习方法以及上文提到的两种方法的一种VO pipeline DF-VO，算法流程示意图如下</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig3.png">
+</div>
+
+<p>伪代码如下</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig2.png">
+</div>
+
+<p>整体流程如下：</p>
+<ul>
+<li><p>使用深度估计网络计算图像的深度</p>
+</li>
+<li><p>使用前后两帧的前向光流和反向光流来计算光流一致性</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig4.png">
+</div>
+
+<p>以此来确定匹配关系较好的前N=2000对2D-2D匹配点</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig5.png">
+</div>
+
+<p>作者在2021年最新提到交arxiv上的<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2103.00933">文章</a>中提到了一个类似于对匹配点对做均匀化的策略，可以增强匹配点对的location diversity以防止欠拟合并且可以防止一些退化情况的出现（匹配点对都在一个平面）</p>
+</li>
+<li><p>此时已经得到了2D-2D的匹配关系以及3D-2D的匹配关系，可以使用上文提到的两种几何方法来计算帧间位姿，但是现在的基于CNN的单目深度估计方法的精度仍然不够好，而基于CNN估计光流的方法很精确并且有着很好泛化能力，这意味着2D-2D的匹配关系要比3D-2D的匹配关系更准确。所以如果光流的大小的均值大于每个阀值（5pixel），那么就使用对极几何的方法计算没有尺度信息的帧间位姿</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig6.png">
+</div>
+
+<p>否则就直接使用PnP算法直接估计有尺度信息的帧间位姿（如果从本质矩阵分解得到的位姿不符合<strong>cheirality condition</strong>也要进行PnP），从论文给出的实验结果来看，直接使用PnP的方法得到的结果精度较低</p>
+</li>
+<li><p>恢复尺度信息：如果上一步采用的是对极几何的方法，那么下一步就要三角化出对应的3D点D’，将D’与深度网络估计出的深度做对比可以得到尺度因子s，将这个尺度因子乘在帧间的平移数据上即可得到帧间的带尺度信息的位姿</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig6.png">
+</div>
+
+<p>这只是一个简单的恢复尺度的方法，在2021年的<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2103.00933">文章</a>中提到了一个更复杂的方法</p>
+</li>
+</ul>
+<h2 id="预测depth的网络"><a href="#预测depth的网络" class="headerlink" title="预测depth的网络"></a>预测depth的网络</h2><p>DF-VO中作者采用了同组的<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1908.10553.pdf">SC-sfmLearner</a>，网络的loss如下</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig8.png">
+</div>
+
+<p>其中第一项为光度loss，第二项为depth边缘的平滑loss，第三项为尺度一致性loss</p>
+<ul>
+<li><p>光度loss</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig9.png">
+</div></li>
+<li><p>depth边缘的平滑loss</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig10.png">
+</div></li>
+<li><p>逆深度一致性loss</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig11.png">
+</div></li>
+</ul>
+<h3 id="解决尺度一致性的方法："><a href="#解决尺度一致性的方法：" class="headerlink" title="解决尺度一致性的方法："></a>解决尺度一致性的方法：</h3><p>1.训练时用双目，测试时用单目<br>2.加入temporal geometry一致性的regularization(<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1908.10553.pdf">SC-sfmlearner</a>以及作者之前的<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1903.00112.pdf">文章</a>中提出的）</p>
+<h2 id="预测flow的网络"><a href="#预测flow的网络" class="headerlink" title="预测flow的网络"></a>预测flow的网络</h2><p>由于对于每个pair的图片，要计算正向和反向的光流，因此计算光流的网络必须要兼顾速度和精度，DF-VO中作者使用的是轻量级的光流估计网络<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1805.07036.pdf">LiteFlowNet</a>，这个网络比较精确并且有着不错的泛化能力，训练的loss如下（最新的<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2103.00933">文章</a>loss稍有不同)</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig12.png">
+</div>
+
+<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><h2 id="训练细节"><a href="#训练细节" class="headerlink" title="训练细节"></a>训练细节</h2><p>在KITTI Odometry的00-08序列上训练深度网络并finetune光流网络（光流网络是在Scene Flow上训练得到的）</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig13.png">
+</div>
+
+<h2 id="评估"><a href="#评估" class="headerlink" title="评估"></a>评估</h2><p>在KITTI上将DF-VO和基于CNN或者传统的方法进行对比，我们使用双目训练，单目测试的结果Stereo Train超过了其他所有方法，结果如下</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig14.png">
+</div>
+
+<p>几个要点：</p>
+<ul>
+<li><p>ORB-SLAM2的评估结果是连续跑三遍然后取指标的平均值</p>
+</li>
+<li><p>对于没有尺度因子的方法，通过最小化ATE,进行7DOF（平移+旋转+尺度）的优化得到相应的结果（类似于用evo的评估轨迹的方法）</p>
+</li>
+<li><p>对于有尺度因子的方法，为了公平起见（和没有尺度的方法相比），进行6个自由度的优化</p>
+</li>
+</ul>
+<h1 id="Ablation-Study"><a href="#Ablation-Study" class="headerlink" title="Ablation Study"></a>Ablation Study</h1><p>果Stereo Train超过了其他所有方法，结果如下</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig15.png">
+</div>
+
+<p>其中对比的参考模型Reference Model的配置为</p>
+<div align=center>
+<img src="/all_images/2020 ICRA DF-VO/fig16.png">
+</div>
+
+<p>经上表对比可以得到网络的各个模块的作用：</p>
+<ul>
+<li><p>PnP: 可以看出只用PnP的方法的效果很差，这个要归因于深度网络的精度不够高（今后如果有精度更高的方法出现可以考虑用其他精度更高的网络替换）</p>
+</li>
+<li><p>深度模型：Mono.与参考模型相比使用单目图像去训练，因此得到的平移误差更大，加入尺度一致性的相关loss项(逆深度一致性loss)后可以得到改善，但是二者仍然有scale ambuguity问题</p>
+</li>
+<li><p>光流模型：在KIITI上finetune可以改善性能</p>
+</li>
+<li><p>均匀采样：对预测的光流均匀采样得到2D-2D的匹配结果，这样的效果较差，证明了flow consistency的有效性</p>
+</li>
+<li><p>输入全分辨率的图像：如果输入是全分辨率的图像，预测的光流更精确，因此结果更好</p>
+</li>
+</ul>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2103.00933">DF-VO: What Should Be Learnt for Visual Odometry?</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/14/2019-ICCV-monodepth2/" rel="prev" title="2019 ICCV monodepth2">
+      <i class="fa fa-chevron-left"></i> 2019 ICCV monodepth2
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/16/2021-CVPR-DeepVideoMVS/" rel="next" title="2021 CVPR DeepVideoMVS">
+      2021 CVPR DeepVideoMVS <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E8%B4%A1%E7%8C%AE"><span class="nav-number">1.</span> <span class="nav-text">主要贡献</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%87%A0%E4%BD%95%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">基于几何的方法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E6%9E%81%E5%87%A0%E4%BD%95"><span class="nav-number">2.1.</span> <span class="nav-text">对极几何</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PnP"><span class="nav-number">2.2.</span> <span class="nav-text">PnP</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DF-VO"><span class="nav-number">3.</span> <span class="nav-text">DF-VO</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E6%B5%8Bdepth%E7%9A%84%E7%BD%91%E7%BB%9C"><span class="nav-number">3.1.</span> <span class="nav-text">预测depth的网络</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%B0%BA%E5%BA%A6%E4%B8%80%E8%87%B4%E6%80%A7%E7%9A%84%E6%96%B9%E6%B3%95%EF%BC%9A"><span class="nav-number">3.1.1.</span> <span class="nav-text">解决尺度一致性的方法：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E6%B5%8Bflow%E7%9A%84%E7%BD%91%E7%BB%9C"><span class="nav-number">3.2.</span> <span class="nav-text">预测flow的网络</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">4.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E7%BB%86%E8%8A%82"><span class="nav-number">4.1.</span> <span class="nav-text">训练细节</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0"><span class="nav-number">4.2.</span> <span class="nav-text">评估</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Ablation-Study"><span class="nav-number">5.</span> <span class="nav-text">Ablation Study</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

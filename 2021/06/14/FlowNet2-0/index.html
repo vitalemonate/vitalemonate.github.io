@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="主要贡献 发现数据集的训练顺序会影响网络的性能  提出了通过stack网络并引入warp操作来提升网络性能的方法，同时可以调整网络的大小实现速度的精度的tradeoff，在时间开销方面可以达到8fps~140fps(Nvidia GTX 1080)  提出了一个专门用于处理small motion的子网络，并通过fusion network将其和stacked architecture进行fusi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FlowNet2.0">
+<meta property="og:url" content="http://example.com/2021/06/14/FlowNet2-0/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="主要贡献 发现数据集的训练顺序会影响网络的性能  提出了通过stack网络并引入warp操作来提升网络性能的方法，同时可以调整网络的大小实现速度的精度的tradeoff，在时间开销方面可以达到8fps~140fps(Nvidia GTX 1080)  提出了一个专门用于处理small motion的子网络，并通过fusion network将其和stacked architecture进行fusi">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig0.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig1.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig2.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig3.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig4.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig5.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig7.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig6.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig8.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet2.0/fig9.png">
+<meta property="article:published_time" content="2021-06-14T08:40:54.000Z">
+<meta property="article:modified_time" content="2021-10-11T12:30:53.710Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/FlowNet2.0/fig0.png">
+
+<link rel="canonical" href="http://example.com/2021/06/14/FlowNet2-0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>FlowNet2.0 | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/14/FlowNet2-0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          FlowNet2.0
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-06-14 16:40:54" itemprop="dateCreated datePublished" datetime="2021-06-14T16:40:54+08:00">2021-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-10-11 20:30:53" itemprop="dateModified" datetime="2021-10-11T20:30:53+08:00">2021-10-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/optical-flow/" itemprop="url" rel="index"><span itemprop="name">optical flow</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="主要贡献"><a href="#主要贡献" class="headerlink" title="主要贡献"></a>主要贡献</h1><ul>
+<li><p>发现数据集的训练顺序会影响网络的性能</p>
+</li>
+<li><p>提出了通过stack网络并引入warp操作来提升网络性能的方法，同时可以调整网络的大小实现速度的精度的tradeoff，在时间开销方面可以达到8fps~140fps(Nvidia GTX 1080)</p>
+</li>
+<li><p>提出了一个专门用于处理small motion的子网络，并通过fusion network将其和stacked architecture进行fusion，得到最终的网络架构FlowNet2，这个网络的性能要大幅度高于FlowNet并在Sintel和KITTI的benchmark上与SOTA达到相近的表现</p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h1 id="数据集的安排"><a href="#数据集的安排" class="headerlink" title="数据集的安排"></a>数据集的安排</h1><h2 id="FlyingThings3D"><a href="#FlyingThings3D" class="headerlink" title="FlyingThings3D"></a>FlyingThings3D</h2><p>FlowNet是在Flying Chairs这个虚拟合成的数据集上进行训练的，这个数据集只有2D的affine transformation，而2015年<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1512.02134.pdf">DispNet</a>中提出的数据集FlyingThings3D包含了真实的3D运动和光照影响，可以看作是3D版本的Flying Chairs, 示意图如下</p>
+<div align=center>
+<img src="/all_images/FlowNet2.0/fig0.png">
+</div>
+
+<h2 id="训练过程中学习率的调整方案"><a href="#训练过程中学习率的调整方案" class="headerlink" title="训练过程中学习率的调整方案"></a>训练过程中学习率的调整方案</h2><div align=center>
+<img src="/all_images/FlowNet2.0/fig1.png">
+</div>
+
+<p>其中S_short就是FlowNetS的训练方法，而S_long以及S_fine是作者新提出的方法，</p>
+<h2 id="Sintel-clean数据集下的性能对比"><a href="#Sintel-clean数据集下的性能对比" class="headerlink" title="Sintel clean数据集下的性能对比"></a>Sintel clean数据集下的性能对比</h2><div align=center>
+<img src="/all_images/FlowNet2.0/fig2.png">
+</div>
+
+<h3 id="结论一：数据集的训练顺序会影响网络的性能"><a href="#结论一：数据集的训练顺序会影响网络的性能" class="headerlink" title="结论一：数据集的训练顺序会影响网络的性能"></a>结论一：数据集的训练顺序会影响网络的性能</h3><ul>
+<li><p>尽管FlyingThings3D更realistic，但是只在FlyingThings3D上训练的结果比只在Flying Chairs上训练的结果更差</p>
+</li>
+<li><p>最好的结果是<strong>先在Flying Chairs上进行训练，然后在FlyingThings3D上进行finetune</strong>（如果先在FlyingThings3D上进行训练，在Flying Chairs上进行finetune，结果会怎样呢？）</p>
+</li>
+</ul>
+<h3 id="结论二：FlowNetC的性能好于FlowNetS"><a href="#结论二：FlowNetC的性能好于FlowNetS" class="headerlink" title="结论二：FlowNetC的性能好于FlowNetS"></a>结论二：FlowNetC的性能好于FlowNetS</h3><ul>
+<li><p>上表中的FlowNetS的指标是从FlowNet原文中得到的，但是经查询后发现FlowNet原文中这个指标应该是4.5而不是表中的4.45，应该是一个小错误</p>
+</li>
+<li><p>与FlowNet原文相比，上表中使用S_short训练的FlowNetC的性能要远好于FlowNetS，这个可能是因此FlowNet原文中两个网络训练的方法不一致引起的，但是这就有一个问题，FlowNet的原文中提到FlowNetC在S_short这种方法下会产生梯度爆炸的问题，因此调整了学习率调整策略，而这里作者并没有提到他是怎么解决这个问题的，直接得到了3.77这个结果</p>
+</li>
+</ul>
+<h3 id="改善性能"><a href="#改善性能" class="headerlink" title="改善性能"></a>改善性能</h3><ul>
+<li>通过调整数据集以及学习率，将FlowNetS的性能提高了25%，将FlowNetC的性能提高了30%。上表中并没有列出同一个网络在同一个训练数据集下，使用不同的学习率调整策略得到的网络的性能，也就是说没有体现出学习率的调整策略对于网络性能提升的影响，个人认为这里性能提升的主要原因应该还是加入了FlyingThings3D数据集</li>
+</ul>
+<h1 id="堆叠网络"><a href="#堆叠网络" class="headerlink" title="堆叠网络"></a>堆叠网络</h1><p>先放一张FlowNet2整体的网络架构图</p>
+<div align=center>
+<img src="/all_images/FlowNet2.0/fig3.png">
+</div>
+
+<p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1508.05151">这篇文章</a>发现所有最好的光流预测算法都利用了循环优化的方法。而基于CNN的像素级预测算法结果往往都含有很多噪声和模糊。通常的做法都是利用一些后处理方法对结果进行优化，如FlowNet中，利用传统变分优化方法对FlowNet输出结果进行再优化。那么是否也能够利用CNN来代替后处理方法对结果进行再优化呢？文中对这一问题进行了探究</p>
+<h2 id="两个网络的堆叠"><a href="#两个网络的堆叠" class="headerlink" title="两个网络的堆叠"></a>两个网络的堆叠</h2><p>后一级网络的输入除了输入I_1、I_2外，还有前一级预测的flow，图像I_2经上一级预测的flow的变换图像I_2(w_i)以及误差图像|I_1-I_2(W_i)|，这样可以使新堆叠的FlowNet模块专注去学习I_1与I_2(W_i)之间剩下的运动变换，从而有效的防止堆叠后的网络过拟合，相关的实验结果如下</p>
+<div align=center>
+<img src="/all_images/FlowNet2.0/fig4.png">
+</div>
+
+<p>通过上表的实验结果可以得出以下几个结论：</p>
+<ul>
+<li><p>warp操作可以改善网络过拟合的问题并提高网络性能</p>
+</li>
+<li><p>在第一个网络后增加一个中间loss会有助于网络训练(前提是Net1参与训练而不是已经是训练好了)</p>
+</li>
+<li><p>最好的结果是第一个网络参数固定不动，只训练第二个网络（包含warp操作）</p>
+</li>
+</ul>
+<h2 id="多个不同的网络的堆叠"><a href="#多个不同的网络的堆叠" class="headerlink" title="多个不同的网络的堆叠"></a>多个不同的网络的堆叠</h2><p>这里首先想到堆叠多个共享参数的网络，作者在补充材料中证明了通过堆叠多个共享参数的网络并不能显著提高网络的性能</p>
+<div align=center>
+<img src="/all_images/FlowNet2.0/fig5.png">
+</div>
+
+<p>因此，作者采用了使用不同参数的网络进行堆叠，使用FlowNetC作为整个网络的bootstrap模块，即用来接收最初的两张图片，之后堆叠可以调节宽度的FlowNetS，作者的测试了不同宽度的网络的时间及性能，实验结果如下</p>
+<div align=center>
+<img src="/all_images/FlowNet2.0/fig7.png">
+</div>
+
+<p>由上图可知<strong>保留每层3/8的通道数</strong>是一个不错的选择。最快的FlowNet2-s精度与FlowNetS的精度近似，而在Nvidia GTX 1080运算速率可以达到140fps，不同的堆叠方案的性能如下</p>
+<div align=center>
+<img src="/all_images/FlowNet2.0/fig6.png">
+</div>
+
+<h1 id="小位移情况下的子网络"><a href="#小位移情况下的子网络" class="headerlink" title="小位移情况下的子网络"></a>小位移情况下的子网络</h1><p>如下图所示，FlowNet在真实图片的小位移情况下，结果往往不够理想</p>
+<div align=center>
+<img src="/all_images/FlowNet2.0/fig8.png">
+</div>
+
+<p>因此作者在数据集和网络结构方面都进行了调整</p>
+<h2 id="新的数据集"><a href="#新的数据集" class="headerlink" title="新的数据集"></a>新的数据集</h2><p>提出一个新的数据集ChairsSDHom，这个数据集的图像位移较小，并将此前的堆叠网络FlowNet2-CSS在ChairsSDHom和FlyingThings3D的混合数据上<strong>微调训练</strong>，将结果网络表示为FlowNet2-CSS-ft-sd</p>
+<h2 id="FlowNet2-SD"><a href="#FlowNet2-SD" class="headerlink" title="FlowNet2-SD"></a>FlowNet2-SD</h2><p>对FlowNetS进行改造得到名为FlowNet2-SD的网络，专门用来处理小位移的情况</p>
+<ul>
+<li><p>将FlowNetS中第一个卷积层的stride由2改为1，并将7x7和5x5的卷积核均换为多层3x3卷积核以增加对小位移的分辨率</p>
+</li>
+<li><p>在反卷积层之间，增加一层卷积层以便对小位移输出更加平滑的光流预测</p>
+</li>
+</ul>
+<p>最后通过一个fusion network将FlowNet2-CSS-ft-sd和FlowNet2-SD的结果进行融合，得到最终的FlowNet2</p>
+<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><div align=center>
+<img src="/all_images/FlowNet2.0/fig9.png">
+</div>
+
+<p>结果显而易见，FlowNet2达到了和SOTA接近的性能，并且可以达到8~140fps的帧速，此外文中还通过将FlowNet2的预测结果直接用于运动分割和动作识别的任务中，证明FlowNet2的精度已完全可以和其他传统算法媲美的程度，已达到可以实际应用的阶段</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/37736910">FlowNet到FlowNet2.0：基于卷积神经网络的光流预测算法</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/NVIDIA/flownet2-pytorch">FlowNetPytorch</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/14/FlowNet1-0/" rel="prev" title="FlowNet1.0">
+      <i class="fa fa-chevron-left"></i> FlowNet1.0
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/14/2016-CVPR-DispNet/" rel="next" title="2016 CVPR DispNet">
+      2016 CVPR DispNet <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E8%B4%A1%E7%8C%AE"><span class="nav-number">1.</span> <span class="nav-text">主要贡献</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86%E7%9A%84%E5%AE%89%E6%8E%92"><span class="nav-number">2.</span> <span class="nav-text">数据集的安排</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#FlyingThings3D"><span class="nav-number">2.1.</span> <span class="nav-text">FlyingThings3D</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E8%BF%87%E7%A8%8B%E4%B8%AD%E5%AD%A6%E4%B9%A0%E7%8E%87%E7%9A%84%E8%B0%83%E6%95%B4%E6%96%B9%E6%A1%88"><span class="nav-number">2.2.</span> <span class="nav-text">训练过程中学习率的调整方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sintel-clean%E6%95%B0%E6%8D%AE%E9%9B%86%E4%B8%8B%E7%9A%84%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">2.3.</span> <span class="nav-text">Sintel clean数据集下的性能对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA%E4%B8%80%EF%BC%9A%E6%95%B0%E6%8D%AE%E9%9B%86%E7%9A%84%E8%AE%AD%E7%BB%83%E9%A1%BA%E5%BA%8F%E4%BC%9A%E5%BD%B1%E5%93%8D%E7%BD%91%E7%BB%9C%E7%9A%84%E6%80%A7%E8%83%BD"><span class="nav-number">2.3.1.</span> <span class="nav-text">结论一：数据集的训练顺序会影响网络的性能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA%E4%BA%8C%EF%BC%9AFlowNetC%E7%9A%84%E6%80%A7%E8%83%BD%E5%A5%BD%E4%BA%8EFlowNetS"><span class="nav-number">2.3.2.</span> <span class="nav-text">结论二：FlowNetC的性能好于FlowNetS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%B9%E5%96%84%E6%80%A7%E8%83%BD"><span class="nav-number">2.3.3.</span> <span class="nav-text">改善性能</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A0%86%E5%8F%A0%E7%BD%91%E7%BB%9C"><span class="nav-number">3.</span> <span class="nav-text">堆叠网络</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA%E7%BD%91%E7%BB%9C%E7%9A%84%E5%A0%86%E5%8F%A0"><span class="nav-number">3.1.</span> <span class="nav-text">两个网络的堆叠</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E4%B8%8D%E5%90%8C%E7%9A%84%E7%BD%91%E7%BB%9C%E7%9A%84%E5%A0%86%E5%8F%A0"><span class="nav-number">3.2.</span> <span class="nav-text">多个不同的网络的堆叠</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E4%BD%8D%E7%A7%BB%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E5%AD%90%E7%BD%91%E7%BB%9C"><span class="nav-number">4.</span> <span class="nav-text">小位移情况下的子网络</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">4.1.</span> <span class="nav-text">新的数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FlowNet2-SD"><span class="nav-number">4.2.</span> <span class="nav-text">FlowNet2-SD</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">5.</span> <span class="nav-text">实验</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

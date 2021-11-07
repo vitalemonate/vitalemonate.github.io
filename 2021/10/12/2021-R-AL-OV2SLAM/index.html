@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述OV2SLAM的全称为 A Fully Online and Versatile Visual SLAM for Real-Time Applications，整体的架构图如下     OV2SLAM是一个完备的视觉SLAM框架，整合了当新最新的视觉定位成果，可以处理单目、双目，不同尺度的以及不同帧率（从几Hz到几百Hz)的场景。在3个公开数据集上与一些知名的SLAM算法相比，实现了SOTA的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2021 R-AL OV2SLAM">
+<meta property="og:url" content="http://example.com/2021/10/12/2021-R-AL-OV2SLAM/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述OV2SLAM的全称为 A Fully Online and Versatile Visual SLAM for Real-Time Applications，整体的架构图如下     OV2SLAM是一个完备的视觉SLAM框架，整合了当新最新的视觉定位成果，可以处理单目、双目，不同尺度的以及不同帧率（从几Hz到几百Hz)的场景。在3个公开数据集上与一些知名的SLAM算法相比，实现了SOTA的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/1.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/2.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/25.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/26.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/27.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/8.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/3.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/4.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/6.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/5.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/7.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/9.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/12.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/10.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/11.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/15.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/13.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/14.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/24.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/16.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/17.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/18.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/19.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/20.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/21.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/22.png">
+<meta property="og:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/23.png">
+<meta property="article:published_time" content="2021-10-12T02:17:47.000Z">
+<meta property="article:modified_time" content="2021-11-06T15:23:17.432Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/2021%20R-AL%20OV2SLAM/1.png">
+
+<link rel="canonical" href="http://example.com/2021/10/12/2021-R-AL-OV2SLAM/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>2021 R-AL OV2SLAM | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/10/12/2021-R-AL-OV2SLAM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          2021 R-AL OV2SLAM
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-10-12 10:17:47" itemprop="dateCreated datePublished" datetime="2021-10-12T10:17:47+08:00">2021-10-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-11-06 23:23:17" itemprop="dateModified" datetime="2021-11-06T23:23:17+08:00">2021-11-06</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>OV2SLAM的全称为 A Fully <strong>Online and Versatile Visual</strong> SLAM for Real-Time Applications，整体的架构图如下</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/1.png">
+</div>
+
+<p>OV2SLAM是一个完备的视觉SLAM框架，整合了当新最新的视觉定位成果，可以处理单目、双目，不同尺度的以及不同帧率（从几Hz到几百Hz)的场景。在3个公开数据集上与一些知名的SLAM算法相比，实现了SOTA的精度与实时性能。</p>
+<span id="more"></span>
+<h1 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h1><ul>
+<li><p>实时SLAM：可以支持从20Hz~200Hz，并且在后文的实验中可以看出，相比于ORB-SLAM，OV2SLAM可以在高帧率的情况下依然保持不错的精度；</p>
+</li>
+<li><p>前端采用了LK光流跟踪的方法进行track，这是OV2SLAM中比较重要的部分，主要有以下要点：</p>
+<ul>
+<li><p>OV2SLAM并不像ORB-SLAM对每帧图像都提取指定数量的特征点，普通帧只跟踪上一帧中被跟踪到的特征点。跟踪成功后如果决定当前帧是关键帧，则进一步对当前帧中<strong>没有特征点的区域</strong>提取特征用于之后的跟踪</p>
+</li>
+<li><p>特征点分为<strong>2D keypoints以及3D keypoints</strong>，2D特征点是指没有三角化过的特征点，没有其3D位置的先验信息，而3D keypoints是指已经三角化过的点，具有3D点的先验信息。这二者在光流跟踪的过程中会有不同的处理，具体细节见下文</p>
+</li>
+</ul>
+</li>
+<li><p>闭环检测使用在线词袋iBoW-LCD，在建图跟踪的过程中增量式地更新构建词袋，应该是第一个使用在线词袋的SLAM算法</p>
+</li>
+</ul>
+<h1 id="前端跟踪线程"><a href="#前端跟踪线程" class="headerlink" title="前端跟踪线程"></a>前端跟踪线程</h1><p>结合论文和代码，将单目配置下前端跟踪的流程图整理如下</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/2.png">
+</div>
+
+<p>前端跟踪过程中最重要的步骤是实现光流跟踪关键点(图中<strong>kltTracking</strong>)，其中的要点如下：</p>
+<h2 id="基于金字塔的光流跟踪"><a href="#基于金字塔的光流跟踪" class="headerlink" title="基于金字塔的光流跟踪"></a>基于金字塔的光流跟踪</h2><p>作者使用OpenCV提供的函数<strong>calcOpticalFlowPyrLK</strong>来计算两帧之间的光流，这个函数实现了Bouguet提出的<strong>基于金字塔的改进LK光流跟踪算法</strong>。</p>
+<p>在大位移的情况下，LK光流法中的<strong>一阶泰勒展开并不能近似地描述函数在展开点处的状态</strong>。针对这一问题Bouguet提出了解决方案：建立图像金字塔，在金字塔中从上到下依次计算光流，将上一层计算的光流作为下一层的初始估计，这样每层金字塔只需要计算<strong>小位移下的residual光流</strong>，最终的光流是金字塔各层计算的residual光流的累加</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/25.png">
+</div>
+
+<p>Bouguet使用迭代法，通过不断<strong>最小化邻域内所有点的误差和</strong>方法来求解每一层residual光流，残差的形式为</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/26.png">
+</div>
+
+<p>令残差对residual光流向量的导数为零，可以求得最优的光流的解的形式为</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/27.png">
+</div>
+
+<p>这个解存在的前提是其中的G是可逆的，也就是说第一幅图像中<strong>要进行光流跟踪的点p要在x和y方向上存在梯度</strong>。</p>
+<p>更多算法的细节可以学习<a target="_blank" rel="noopener" href="http://robots.stanford.edu/cs223b04/algo_tracking.pdf">Bouguet的论文</a>，论文中对算法的推导清晰明了，简单易懂。OV2SLAM的作者采用了窗口大小为9×9的4层金字塔来进行光流跟踪。</p>
+<h2 id="2D-keypoints以及3D-keypoints的不同处理"><a href="#2D-keypoints以及3D-keypoints的不同处理" class="headerlink" title="2D keypoints以及3D keypoints的不同处理"></a>2D keypoints以及3D keypoints的不同处理</h2><ul>
+<li><p>由于已知3D keypoints对应的3D点在世界坐标系下的坐标，因此先使用匀速运动模型估计当前帧的初始位姿，然后将3D keyoints对应的3D点投影到当前帧，作为该3D keypoints在当前帧的初始位置</p>
+</li>
+<li><p>由于不知道2D keypoints的3D先验信息，所以只能将其在当前帧的初始位置设置为在上一帧中的位置</p>
+</li>
+</ul>
+<h2 id="基于网格的特征提取"><a href="#基于网格的特征提取" class="headerlink" title="基于网格的特征提取"></a>基于网格的特征提取</h2><p>OV2SLAM将每张图像分为nbwcells*nbhcells个网格，总共的网格的数量为：</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/8.png">
+</div>
+
+<p>图中的nmaxdist为网格的大小，以EuroC数据集为例，nmaxdist为35, 图像的分辨率为752×480，图像可划分的<strong>最多网格数为308</strong>。</p>
+<h2 id="类Frame的设计"><a href="#类Frame的设计" class="headerlink" title="类Frame的设计"></a>类Frame的设计</h2><p>OV2SLAM在整个跟踪过程中并没有像ORB-SLAM那样每一帧都构造一个Frame类来存放特征点、描述子以及位姿等信息，只保留了一个指向当前帧的指针<strong>pcurframe</strong>，用于实时记录当前帧跟踪到的2D、3D特征点以及位姿信息。接受到新图像时只更新时间戳和帧号，在光流跟踪以及计算位姿后分别更新当前帧的特征点、位姿信息并更新运动模型。</p>
+<p>更新时间戳和帧号</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/3.png">
+</div>
+
+<p>更新特征点的位置信息以及在网格中的分布情况</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/4.png">
+</div>
+
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/6.png">
+</div>
+
+<p>PnP计算位姿并更新运动模型</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/5.png">
+</div>
+
+<h2 id="创建关键帧"><a href="#创建关键帧" class="headerlink" title="创建关键帧"></a>创建关键帧</h2><p>当一个帧从普通帧变为关键帧时，关于特征点的处理主要有以下两点：</p>
+<ul>
+<li><p>对于已经跟踪到的2D、3D特征点，在当前图像中<strong>计算特征点的描述子</strong>，其实就是更新了描述子</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/7.png">
+</div></li>
+<li><p>在图像中其他<strong>没有关键点的网格中</strong>提取特征并计算描述子。作者提供了三种提取特征的方法，分别是GFTT features (Harris corners with Shi-Tomasi method) ，detectGridFAST以及detectSingleScale</p>
+</li>
+</ul>
+<h3 id="GFTT"><a href="#GFTT" class="headerlink" title="GFTT"></a>GFTT</h3><p>这种特征提取的方法并不是严格地要求每个网格内有指定数目的特征点，而是根据需要的特征点的数目以及两个特征点之间最小距离来控制特征点的分布情况，主要步骤如下：</p>
+<ul>
+<li><p>设置mask来表示不提取特征的区域：图像的边界 + 以已有特征点的位置为圆心，nmaxdist_为半径的圆，这样保证了特征点之间的间隔，实现类似非极大值抵制的功能，某一帧mask设置的情况如下</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/9.png">
+</div></li>
+<li><p>接下来只在上图所示的白色区域提取特征，<strong>最多提取特征的数量 = 总网格数 - 当前帧中已经有特征点的网格数</strong></p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/12.png">
+</div>
+
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/10.png">
+</div></li>
+<li><p>对特征点进行亚像素级的优化</p>
+</li>
+<li><p>如果上一步提取到的特征的数量达到最多提取特征的数量的2/3或者最多提取特征的数量少于20就直接返回</p>
+</li>
+<li><p>不满足上一个条件就继续提取特征，此时<strong>最多提取特征的数量 = 总网格数 - 当前帧中已经有特征点的网格数 - 第一步已经提取的特征点的数量</strong></p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/11.png">
+</div></li>
+<li><p>同时将特征点之间的最小距离调小为原来的一半，此时的mask为</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/15.png">
+</div></li>
+<li><p>对新提取的特征点进行亚像素级的优化</p>
+</li>
+</ul>
+<h3 id="detectGridFAST"><a href="#detectGridFAST" class="headerlink" title="detectGridFAST"></a>detectGridFAST</h3><ul>
+<li><p>类似GFTT，先设置不需要提取特征的区域mask，发现代码中应该是忘记设置图像边界也不提取特征，修改代码前后的mask对比如下</p>
+<p>修改前：</p>
+  <div align="center">
+  <img src="/all_images/2021 R-AL OV2SLAM/13.png">
+  </div>
+
+<p>修改后：</p>
+  <div align="center">
+  <img src="/all_images/2021 R-AL OV2SLAM/14.png">
+  </div></li>
+<li><p>在mask后的图像中遍历每个网格提取FAST角点，每个网格中提取到的特征点按响应值从大到小排序，如果最大的响应值大于20，就将该点加入最终的结果</p>
+</li>
+<li><p>根据提取出来的点的数量调整FAST的阀值(当前帧不会再使用这个调整后的阀值提取特征，只会影响之后的帧)</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/24.png">
+</div></li>
+<li><p>对特征点进行亚像素级的优化</p>
+</li>
+</ul>
+<h3 id="detectSingleScale的流程与detectGridFAST类似"><a href="#detectSingleScale的流程与detectGridFAST类似" class="headerlink" title="detectSingleScale的流程与detectGridFAST类似"></a>detectSingleScale的流程与detectGridFAST类似</h3><h1 id="mapping线程"><a href="#mapping线程" class="headerlink" title="mapping线程"></a>mapping线程</h1><p>mapping线程主要负责三角化以及局部地图的跟踪，在双目的配置情况下会增加立体匹配的功能。</p>
+<h2 id="三角化"><a href="#三角化" class="headerlink" title="三角化"></a>三角化</h2><p>mapping中的三角化是整个系统中<strong>唯一生成3D点的地方</strong>，包括初始化成功后的生成<strong>初始地图</strong>。三角化的主要功能是在<strong>当前关键帧与共视关键帧之间</strong>产生新的地图点，使得跟踪更稳。</p>
+<p>具体过程为：对于当前关键帧中的每一个2D特征点，将当前2D点与<strong>第一次观测到该2D点的关键帧</strong>中的对应2D点进行三角化。相比ORB-SLAM中将当前关键帧与其<strong>共视程度最高的20帧至少有15个共视点的相邻关键帧</strong>通过词袋进行特征匹配，再将成功匹配的点对进行三角化的策略，二者的效果有待进一步实验对比。下图为ORB-SLAM的LocalMapping中的三角化搜索范围</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/16.png">
+</div>
+
+<h2 id="局部地图跟踪"><a href="#局部地图跟踪" class="headerlink" title="局部地图跟踪"></a>局部地图跟踪</h2><p>局部地图跟踪的主要功能是<strong>增加局部地图中的点在当前帧的观测情况</strong>，其中局部关键帧为<strong>当前关键帧的共视关键帧（一级关键帧），局部地图点为一级关键帧对应的地图点</strong>。而ORB-SLAM2中的局部地图的规模要比OV2SLAM大，ORB-SLAM的局部关键帧不仅包括了一级关键帧，还包括了每个一级关键帧的共视程度最高的前10个共视关键帧（二级关键帧）以及一级关键帧的父关键帧和子关键帧。更大范围的局部地图可以提高跟踪效果，同时也会带来更大的开销，所以关于局部地图的大小得根据不同的使用场景来调整。</p>
+<p>具体匹配的过程是将3D点投影到当前关键帧的像素平面上，与投影点所在的网格内的特征点进行匹配。之后再将地图点进行融合。</p>
+<h1 id="状态估计线程"><a href="#状态估计线程" class="headerlink" title="状态估计线程"></a>状态估计线程</h1><p>状态估计线程的主要功能为优化<strong>局部关键帧的位姿以及3D点的位置</strong>，并滤除冗余的关键帧。</p>
+<h2 id="局部地图的优化"><a href="#局部地图的优化" class="headerlink" title="局部地图的优化"></a>局部地图的优化</h2><p>这里的优化与ORB-SLAM相近，优化当前关键帧和<strong>与其至少有25个共视点</strong>的相邻关键帧的位姿以及这些关键帧对应的地图点的3D坐标，对于那些不在这些关键帧范围内，但是可以观测到这些地图点的关键帧，也将观测添加到BA中但是不对这些关键帧的位姿进行优化。</p>
+<p>在优化的具体实现过程中，作者将地图点的参数化形式由一般的三维坐标改为一个锚点（该地图点在第一次被观测到的关键帧中的像素位置）与<strong>逆深度</strong>的形式：</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/17.png">
+</div>
+
+<p>关于采用逆深度的优点可见这篇<a target="_blank" rel="noopener" href="https://blog.csdn.net/shyjhyp11/article/details/115376908">博客</a>。最终代价函数的形式为</p>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/18.png">
+</div>
+
+<h1 id="闭环检测线程"><a href="#闭环检测线程" class="headerlink" title="闭环检测线程"></a>闭环检测线程</h1><p>OV2SLAM采用了在线词袋的方式来进行回环检测，这是一个重要的创新点。主要流程主要分为关键帧预处理、使用<strong>iBoW-LCD</strong>算法检测候选关键帧、验证候选关键帧、位姿图优化以及looseBA。</p>
+<h2 id="关键帧预处理以及选取候选关键帧"><a href="#关键帧预处理以及选取候选关键帧" class="headerlink" title="关键帧预处理以及选取候选关键帧"></a>关键帧预处理以及选取候选关键帧</h2><p>作者在论文中提到，出于定位的考虑，OV2SLAM并不会跟踪太多的特征点（大概只有200多）。在这里为了更新词袋树，对每幅图像额外提取300个FAST特征并计算其描述子，然后将此关键帧传给iBoW-LCD用于更新词袋树，当关键帧数量大于100帧时，在词袋树中查找当前关键帧的闭环候选关键帧。</p>
+<h2 id="验证候选关键帧"><a href="#验证候选关键帧" class="headerlink" title="验证候选关键帧"></a>验证候选关键帧</h2><p>由于闭环检测中<strong>false positive</strong>的结果会给系统带来毁灭性的影响，所以必须是尽最大的可能避免这种错误的出现。作者连续采用了3种验证闭环候选帧空间一致性的方法：kNN BF匹配、EM-RANSAC以及P3P-RANSAC，并使用motion-only BA优化当前关键帧的hypothesis pose，如果最终存在30个以上的内点，则候选关键帧验证成功。</p>
+<h2 id="位姿图优化"><a href="#位姿图优化" class="headerlink" title="位姿图优化"></a>位姿图优化</h2><p>目的是将误差均摊到检测到的关键帧与当前关键帧之间的所有关键帧之间。</p>
+<h2 id="looseBA"><a href="#looseBA" class="headerlink" title="looseBA"></a>looseBA</h2><p>与ORB-SLAM中的fullBA相比，OV2SLAM只对受闭环检测影响的关键帧以及地图点进行优化，这样减轻了BA的负担，但是仍然要花费数秒的时间</p>
+<h1 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h1><p>作者在三个数据集: EuRoC、KITTI以及TartanAir数据集上对OV2SLAM进行评估。</p>
+<h2 id="EuRoC"><a href="#EuRoC" class="headerlink" title="EuRoC"></a>EuRoC</h2><h3 id="EuRoC双目"><a href="#EuRoC双目" class="headerlink" title="EuRoC双目"></a>EuRoC双目</h3><p>说明：</p>
+<ul>
+<li><p>表中的not RT指不要求实时性，即每一帧都被系统完全处理，没有信息的丢失。没有备注not RT就是正常的20Hz</p>
+</li>
+<li><p>表中算法的结果是跑5次数据集求中位数后的结果</p>
+</li>
+</ul>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/19.png">
+</div>
+
+<p>结论：</p>
+<ul>
+<li><p>ORB-SLAM在不要求实时性的情况下表现较好，但是当加入实时性(20Hz)的要求后性能<strong>大幅度下降</strong></p>
+</li>
+<li><p>在MH开头的工厂序列中，OV2SLAM在<strong>所有具有实时性的SLAM算法中表现最好</strong>。并且没有闭环的OV2SLAM只在MH 01序列上比SVO差，在其他序列都上的结果都是最好的，并且精度接近不要求实时性的ORB-SLAM</p>
+</li>
+<li><p>在V开头的房间序列中，SVO和Basalt的性能更好，OV2SLAM与VINS-fusion、OKVIS表现相近。这一结果可能是因为房间的环境中有较多弱纹理的区域，基于直接法的SLAM可能会更高效，此外IMU的使用也可以提高算法的精度</p>
+</li>
+</ul>
+<h3 id="EuRoC双目测试实时性能"><a href="#EuRoC双目测试实时性能" class="headerlink" title="EuRoC双目测试实时性能"></a>EuRoC双目测试实时性能</h3><p>说明：</p>
+<ul>
+<li><p>在MH开头的工厂序列中，从开头剧烈运动的帧之后开始跑（这些帧用于VI方法中的IMU初始化）,怀疑作者这么做是因为剧烈运动的情况下OV2SLAM的跟踪效果不好</p>
+</li>
+<li><p>OV2SLAM-fast是OV2SLAM的一个轻量级版本，相比完整的OV2SLAM，它没有闭环检测的功能，并且在前端提取的是FAST特征，图像中网格的大小从35调整为50，也就是说要跟踪的点的数量会更少</p>
+</li>
+</ul>
+<div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/20.png">
+</div>
+
+<p>结论：</p>
+<ul>
+<li><p>在最简单的序列下OV2SLAM可以支持400Hz的帧率</p>
+</li>
+<li><p>OV2SLAM-fast可以在200Hz的帧率下达到ORB-SLAM以20Hz运行的精度</p>
+</li>
+</ul>
+<h3 id="EuRoC单目"><a href="#EuRoC单目" class="headerlink" title="EuRoC单目"></a>EuRoC单目</h3><div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/21.png">
+</div>
+
+<p>结论：</p>
+<ul>
+<li><p>在实时性的要求下，OV2SLAM在工厂序列依然是精度最高的算法，在室内的房间序列也可能保证competitive的精度与鲁棒性，DSO是最接近OV2SLAM的算法</p>
+</li>
+<li><p>性能最好的还是没有实时性要求的ORB-SLAM</p>
+</li>
+</ul>
+<h2 id="KITTI训练集双目序列"><a href="#KITTI训练集双目序列" class="headerlink" title="KITTI训练集双目序列"></a>KITTI训练集双目序列</h2><div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/22.png">
+</div>
+
+<p>结论：</p>
+<ul>
+<li><p>与EuRoC类似，ORB-SLAM受实时性要求的影响较大，而OV2SLAM受实时性要求的影响较小</p>
+</li>
+<li><p>截止作者写论文时，OV2SLAM是KITTI Odometry这个benchmark中是最好的视觉SLAM算法</p>
+</li>
+</ul>
+<h2 id="TartanAir数据集"><a href="#TartanAir数据集" class="headerlink" title="TartanAir数据集"></a>TartanAir数据集</h2><div align="center">
+<img src="/all_images/2021 R-AL OV2SLAM/23.png">
+</div>
+
+<p>结论：</p>
+<ul>
+<li><p>使用深度学习的特征的COLMAP是这个数据集上最好的算法</p>
+</li>
+<li><p>次好的算法是COLMAP+Voldor的组合</p>
+</li>
+<li><p>OV2SLAM在整个单目和双目的序列中排名第三，同时也是<strong>在线的算法中效果最好的算法，效果要远好于ORB-SLAM</strong></p>
+</li>
+</ul>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2102.04060">OV2SLAM</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/electech6/ORB_SLAM2_detailed_comments/blob/master/%E3%80%8AORB-SLAM2%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E3%80%8B%E5%AD%A6%E4%B9%A0%E6%89%8B%E5%86%8C.pdf">《ORB-SLAM2源码解析》学习手册.pdf</a></p>
+</li>
+</ul>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/10/11/ORB-SLAM2%E4%B8%AD%E7%9A%84%E8%AF%8D%E8%A2%8B%E6%A8%A1%E5%9E%8B/" rel="prev" title="ORB-SLAM2中的词袋模型">
+      <i class="fa fa-chevron-left"></i> ORB-SLAM2中的词袋模型
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/10/25/2020-IROS-DXSLAM/" rel="next" title="2020 IROS DXSLAM">
+      2020 IROS DXSLAM <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">2.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E7%AB%AF%E8%B7%9F%E8%B8%AA%E7%BA%BF%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">前端跟踪线程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E9%87%91%E5%AD%97%E5%A1%94%E7%9A%84%E5%85%89%E6%B5%81%E8%B7%9F%E8%B8%AA"><span class="nav-number">3.1.</span> <span class="nav-text">基于金字塔的光流跟踪</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2D-keypoints%E4%BB%A5%E5%8F%8A3D-keypoints%E7%9A%84%E4%B8%8D%E5%90%8C%E5%A4%84%E7%90%86"><span class="nav-number">3.2.</span> <span class="nav-text">2D keypoints以及3D keypoints的不同处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E7%BD%91%E6%A0%BC%E7%9A%84%E7%89%B9%E5%BE%81%E6%8F%90%E5%8F%96"><span class="nav-number">3.3.</span> <span class="nav-text">基于网格的特征提取</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BBFrame%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="nav-number">3.4.</span> <span class="nav-text">类Frame的设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%85%B3%E9%94%AE%E5%B8%A7"><span class="nav-number">3.5.</span> <span class="nav-text">创建关键帧</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#GFTT"><span class="nav-number">3.5.1.</span> <span class="nav-text">GFTT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#detectGridFAST"><span class="nav-number">3.5.2.</span> <span class="nav-text">detectGridFAST</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#detectSingleScale%E7%9A%84%E6%B5%81%E7%A8%8B%E4%B8%8EdetectGridFAST%E7%B1%BB%E4%BC%BC"><span class="nav-number">3.5.3.</span> <span class="nav-text">detectSingleScale的流程与detectGridFAST类似</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mapping%E7%BA%BF%E7%A8%8B"><span class="nav-number">4.</span> <span class="nav-text">mapping线程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E8%A7%92%E5%8C%96"><span class="nav-number">4.1.</span> <span class="nav-text">三角化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B1%80%E9%83%A8%E5%9C%B0%E5%9B%BE%E8%B7%9F%E8%B8%AA"><span class="nav-number">4.2.</span> <span class="nav-text">局部地图跟踪</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E4%BC%B0%E8%AE%A1%E7%BA%BF%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">状态估计线程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B1%80%E9%83%A8%E5%9C%B0%E5%9B%BE%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">5.1.</span> <span class="nav-text">局部地图的优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%97%AD%E7%8E%AF%E6%A3%80%E6%B5%8B%E7%BA%BF%E7%A8%8B"><span class="nav-number">6.</span> <span class="nav-text">闭环检测线程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E5%B8%A7%E9%A2%84%E5%A4%84%E7%90%86%E4%BB%A5%E5%8F%8A%E9%80%89%E5%8F%96%E5%80%99%E9%80%89%E5%85%B3%E9%94%AE%E5%B8%A7"><span class="nav-number">6.1.</span> <span class="nav-text">关键帧预处理以及选取候选关键帧</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E5%80%99%E9%80%89%E5%85%B3%E9%94%AE%E5%B8%A7"><span class="nav-number">6.2.</span> <span class="nav-text">验证候选关键帧</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8D%E5%A7%BF%E5%9B%BE%E4%BC%98%E5%8C%96"><span class="nav-number">6.3.</span> <span class="nav-text">位姿图优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#looseBA"><span class="nav-number">6.4.</span> <span class="nav-text">looseBA</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">7.</span> <span class="nav-text">实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#EuRoC"><span class="nav-number">7.1.</span> <span class="nav-text">EuRoC</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#EuRoC%E5%8F%8C%E7%9B%AE"><span class="nav-number">7.1.1.</span> <span class="nav-text">EuRoC双目</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EuRoC%E5%8F%8C%E7%9B%AE%E6%B5%8B%E8%AF%95%E5%AE%9E%E6%97%B6%E6%80%A7%E8%83%BD"><span class="nav-number">7.1.2.</span> <span class="nav-text">EuRoC双目测试实时性能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EuRoC%E5%8D%95%E7%9B%AE"><span class="nav-number">7.1.3.</span> <span class="nav-text">EuRoC单目</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KITTI%E8%AE%AD%E7%BB%83%E9%9B%86%E5%8F%8C%E7%9B%AE%E5%BA%8F%E5%88%97"><span class="nav-number">7.2.</span> <span class="nav-text">KITTI训练集双目序列</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TartanAir%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">7.3.</span> <span class="nav-text">TartanAir数据集</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">8.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

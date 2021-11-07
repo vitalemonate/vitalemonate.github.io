@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="主要贡献 提出一个端到端的基于单目video的深度估计和运动估计的自监督学习框架sfmlearner，是用自监督学习进行深度估计的开山之作，之后的很多算法都是在sfmlearner的基础上进行改进  在 KITTI 数据集上的评估结果显示，该方法和之前用 ground-truth pose 或者 depth 进行监督的方法性能是相当的，并且运动估计的结果和现有的通用 SLAM 方法(ORB-SLA">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2017 CVPR sfmlearner">
+<meta property="og:url" content="http://example.com/2021/06/14/2017-CVPR-sfmlearner/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="主要贡献 提出一个端到端的基于单目video的深度估计和运动估计的自监督学习框架sfmlearner，是用自监督学习进行深度估计的开山之作，之后的很多算法都是在sfmlearner的基础上进行改进  在 KITTI 数据集上的评估结果显示，该方法和之前用 ground-truth pose 或者 depth 进行监督的方法性能是相当的，并且运动估计的结果和现有的通用 SLAM 方法(ORB-SLA">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig0.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig1.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig5.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig6.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig7.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig3.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig2.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig8.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig4.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig9.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig10.png">
+<meta property="og:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig11.png">
+<meta property="article:published_time" content="2021-06-14T08:49:54.000Z">
+<meta property="article:modified_time" content="2021-10-11T12:30:53.710Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/2017%20CVPR%20sfmlearner/fig0.png">
+
+<link rel="canonical" href="http://example.com/2021/06/14/2017-CVPR-sfmlearner/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>2017 CVPR sfmlearner | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/14/2017-CVPR-sfmlearner/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          2017 CVPR sfmlearner
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-06-14 16:49:54" itemprop="dateCreated datePublished" datetime="2021-06-14T16:49:54+08:00">2021-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-10-11 20:30:53" itemprop="dateModified" datetime="2021-10-11T20:30:53+08:00">2021-10-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/depth-estimation/" itemprop="url" rel="index"><span itemprop="name">depth estimation</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="主要贡献"><a href="#主要贡献" class="headerlink" title="主要贡献"></a>主要贡献</h1><ul>
+<li><p>提出一个端到端的<strong>基于单目video的</strong>深度估计和运动估计的<strong>自监督学习</strong>框架sfmlearner，是用自监督学习进行深度估计的开山之作，之后的很多算法都是在sfmlearner的基础上进行改进</p>
+</li>
+<li><p>在 KITTI 数据集上的评估结果显示，该方法和之前用 ground-truth pose 或者 depth 进行监督的方法性能是相当的，并且运动估计的结果和现有的通用 SLAM 方法(ORB-SLAM)性能相当</p>
+</li>
+</ul>
+<span id="more"></span>
+
+<h1 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h1><div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig0.png">
+</div>
+
+<p>上图为sfmlearner的架构，主要由一个depth CNN和一个Pose CNN组成，训练时二者是耦合在一起的，在测试时可以分离使用。sfmlearner的主要思想为，借助view systhesis的方法，将当前帧作为target view，时间上邻近的帧作为source views，通过深度预测模块将source view转移到target view的坐标系下，如下图所示，计算二者的像素误差作为训练的 loss</p>
+<div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig1.png">
+</div>
+
+<h2 id="Explainability-mask"><a href="#Explainability-mask" class="headerlink" title="Explainability mask"></a>Explainability mask</h2><p>上文提出了sfmlearner的loss的构造方法，但是要注意的问题是这个loss的合理性是要在以下3个假设成立的基础上的：</p>
+<div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig5.png">
+</div>
+
+<p>如果这三个假设不成立，那么这部分pixel对应的loss就是不合理的，会影响网络的性能，作者在文中提出了一个<strong>explainability mask</strong>来滤除这些不满足假设的pixel所对应的loss，加入explainability mask后的loss的形式为</p>
+<div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig6.png">
+</div>
+
+<p>这个mask意义为上述view systhesis的假设成立的概率，由于我们没有对这个mask的监督量，直观上当所有的pixel处的mask都为0时，loss最小，但是这显然不符合我们的期望。</p>
+<p>理想情况下， target view和source views中的每个像素点都一一对应，此时mask不起作用，也就是每一个值都是1。作者希望网络尽可能地接近这种情况，也就是说希望mask的每个元素尽可能接近1。为了到达这个目的，作者<strong>用mask和1之间的cross entropy来衡量误差</strong>，希望cross entropy 越小越好</p>
+<p>加上平滑loss(depth map二阶导的L1 norm)，最终loss的形式为</p>
+<div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig7.png">
+</div>
+
+
+<h2 id="图像warp过程"><a href="#图像warp过程" class="headerlink" title="图像warp过程"></a>图像warp过程</h2><div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig3.png">
+</div>
+
+<p>上文提到要将source views warp到target view下，具体的实现参考了<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1506.02025.pdf">STN</a>的方法，其实就是<strong>inverse image warp + 双线性插值</strong>的方法，关于inverse image warp的内容之前的<a target="_blank" rel="noopener" href="https://github.com/vitalemonate/Image-Warping">笔记</a>里的详细的说明</p>
+<h2 id="Depth-CNN"><a href="#Depth-CNN" class="headerlink" title="Depth CNN"></a>Depth CNN</h2><div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig2.png">
+</div>
+
+<p>上图为sfmlearner的深度估计网络的架构，整体上基于DispNet进行了多尺度的预测，每层的输入通过</p>
+<div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig8.png">
+</div>
+
+<p>将网络输出的深度限定为正值并限制在一定范围内</p>
+<h2 id="Pose-CNN-amp-amp-Explainability-CNN"><a href="#Pose-CNN-amp-amp-Explainability-CNN" class="headerlink" title="Pose CNN &amp;&amp; Explainability CNN"></a>Pose CNN &amp;&amp; Explainability CNN</h2><div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig4.png">
+</div>
+
+<p>如上图所示，Pose CNN和Explainability CNN共享encoder部分，decoder部分不同，pose CNN的输出为target view与source views之间的相对pose（欧拉角形式的旋转以及3维向量形式的平移）</p>
+<h1 id="实验部分"><a href="#实验部分" class="headerlink" title="实验部分"></a>实验部分</h1><h2 id="训练细节"><a href="#训练细节" class="headerlink" title="训练细节"></a>训练细节</h2><ul>
+<li><p>λs = 0.5/l(l为下采样因子), λs = 0.2</p>
+</li>
+<li><p>除了输出层都使用BN</p>
+</li>
+<li><p>采用Adam优化器，β1 = 0.9, β2 = 0.999，学习率为0.0002，batch size = 4，训练大约在150K次后收敛</p>
+</li>
+<li><p>训练使用的图像大小128×416，测试时可以任意大小</p>
+</li>
+</ul>
+<h2 id="Depth-CNN-1"><a href="#Depth-CNN-1" class="headerlink" title="Depth CNN"></a>Depth CNN</h2><ul>
+<li><p>固定输入序列的长度为3</p>
+</li>
+<li><p>尺度因子：predict的depth map的均值与groundtruth的均值的比值</p>
+</li>
+</ul>
+<h2 id="KITTI-Eigen-Split评估depth"><a href="#KITTI-Eigen-Split评估depth" class="headerlink" title="KITTI Eigen Split评估depth"></a>KITTI Eigen Split评估depth</h2><div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig9.png">
+</div>
+
+<p>性能稍差于几个监督学习的方法</p>
+<h2 id="KITTI-Odometry评估pose"><a href="#KITTI-Odometry评估pose" class="headerlink" title="KITTI Odometry评估pose"></a>KITTI Odometry评估pose</h2><ul>
+<li><p>固定输入序列长度为5</p>
+</li>
+<li><p>由于scale ambiguity，在评估时使用最小化ATE的方法优化尺度将轨迹与groundtruth对齐，实验结果如下</p>
+<div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig10.png">
+</div></li>
+</ul>
+<p>帧间位姿的估计性能高于ORB-SLAM2</p>
+<h2 id="Explainability-mask的作用"><a href="#Explainability-mask的作用" class="headerlink" title="Explainability mask的作用"></a>Explainability mask的作用</h2><div align=center>
+<img src="/all_images/2017 CVPR sfmlearner/fig11.png">
+</div>
+
+<h1 id="讨论"><a href="#讨论" class="headerlink" title="讨论"></a>讨论</h1><p>sfmlearner目前存在的问题：</p>
+<ul>
+<li><p>不能显式地解决动态物体和遮挡的问题</p>
+</li>
+<li><p>假设内参已知</p>
+</li>
+<li><p>使用depth map来表示3D场景，未来可以扩展为3D volumeric的表现形式</p>
+</li>
+</ul>
+<h1 id="遗留问题"><a href="#遗留问题" class="headerlink" title="遗留问题"></a>遗留问题</h1><ul>
+<li><p>Depth CNN和DispNet有哪些区别</p>
+</li>
+<li><p>smoothness项没有考虑尺度因素</p>
+</li>
+<li><p>训练图像大小的尺寸怎么确定</p>
+</li>
+<li><p>输入序列的长度有什么影响</p>
+</li>
+</ul>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1704.07813v2.pdf">arXiv</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/50544334">Unsupervised Learning of Depth and Ego-Motion</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/14/2016-CVPR-DispNet/" rel="prev" title="2016 CVPR DispNet">
+      <i class="fa fa-chevron-left"></i> 2016 CVPR DispNet
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/14/2019-ICCV-depth-cues/" rel="next" title="2019 ICCV depth cues">
+      2019 ICCV depth cues <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E8%B4%A1%E7%8C%AE"><span class="nav-number">1.</span> <span class="nav-text">主要贡献</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">方法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Explainability-mask"><span class="nav-number">2.1.</span> <span class="nav-text">Explainability mask</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BE%E5%83%8Fwarp%E8%BF%87%E7%A8%8B"><span class="nav-number">2.2.</span> <span class="nav-text">图像warp过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Depth-CNN"><span class="nav-number">2.3.</span> <span class="nav-text">Depth CNN</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pose-CNN-amp-amp-Explainability-CNN"><span class="nav-number">2.4.</span> <span class="nav-text">Pose CNN &amp;&amp; Explainability CNN</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E9%83%A8%E5%88%86"><span class="nav-number">3.</span> <span class="nav-text">实验部分</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E7%BB%86%E8%8A%82"><span class="nav-number">3.1.</span> <span class="nav-text">训练细节</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Depth-CNN-1"><span class="nav-number">3.2.</span> <span class="nav-text">Depth CNN</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KITTI-Eigen-Split%E8%AF%84%E4%BC%B0depth"><span class="nav-number">3.3.</span> <span class="nav-text">KITTI Eigen Split评估depth</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KITTI-Odometry%E8%AF%84%E4%BC%B0pose"><span class="nav-number">3.4.</span> <span class="nav-text">KITTI Odometry评估pose</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Explainability-mask%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-number">3.5.</span> <span class="nav-text">Explainability mask的作用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A8%E8%AE%BA"><span class="nav-number">4.</span> <span class="nav-text">讨论</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%81%97%E7%95%99%E9%97%AE%E9%A2%98"><span class="nav-number">5.</span> <span class="nav-text">遗留问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="主要贡献 提出了一个使用CNN端到端预测光流的网络FlowNet  提出了一个用于训练网络的no-realistic的合成数据集Flying Chairs dataset  在现有数据集以及合成数据集上进行测试，验证了用深度学习预测光流的可行性  性能比不过SOTA  可以在GPU上实现5-10fps速度，是可以实时估计光流的方法中的SOTA">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FlowNet1.0">
+<meta property="og:url" content="http://example.com/2021/06/14/FlowNet1-0/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="主要贡献 提出了一个使用CNN端到端预测光流的网络FlowNet  提出了一个用于训练网络的no-realistic的合成数据集Flying Chairs dataset  在现有数据集以及合成数据集上进行测试，验证了用深度学习预测光流的可行性  性能比不过SOTA  可以在GPU上实现5-10fps速度，是可以实时估计光流的方法中的SOTA">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig0.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig1.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig2.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig3.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig4.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig5.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig11.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig6.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig7.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig8.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig9.png">
+<meta property="og:image" content="http://example.com/all_images/FlowNet1.0/fig10.png">
+<meta property="article:published_time" content="2021-06-14T08:38:10.000Z">
+<meta property="article:modified_time" content="2021-10-11T12:30:53.710Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/FlowNet1.0/fig0.png">
+
+<link rel="canonical" href="http://example.com/2021/06/14/FlowNet1-0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>FlowNet1.0 | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/14/FlowNet1-0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          FlowNet1.0
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-06-14 16:38:10" itemprop="dateCreated datePublished" datetime="2021-06-14T16:38:10+08:00">2021-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-10-11 20:30:53" itemprop="dateModified" datetime="2021-10-11T20:30:53+08:00">2021-10-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/optical-flow/" itemprop="url" rel="index"><span itemprop="name">optical flow</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="主要贡献"><a href="#主要贡献" class="headerlink" title="主要贡献"></a>主要贡献</h1><ul>
+<li><p>提出了一个使用CNN端到端预测光流的网络<strong>FlowNet</strong></p>
+</li>
+<li><p>提出了一个用于训练网络的no-realistic的合成数据集<strong>Flying Chairs dataset</strong></p>
+</li>
+<li><p>在现有数据集以及合成数据集上进行测试，验证了用深度学习预测光流的可行性</p>
+<ul>
+<li><p>性能比不过SOTA</p>
+</li>
+<li><p>可以在GPU上实现5-10fps速度，是可以实时估计光流的方法中的SOTA</p>
+</li>
+</ul>
+</li>
+</ul>
+<span id="more"></span>
+
+<h1 id="网络架构"><a href="#网络架构" class="headerlink" title="网络架构"></a>网络架构</h1><p>作者在论文中提出了两种结构：FlowNetSimple以及FlowNetCorr</p>
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig0.png">
+</div>
+
+<h2 id="FlowNetSimple"><a href="#FlowNetSimple" class="headerlink" title="FlowNetSimple"></a>FlowNetSimple</h2><p>FlowNetSimple的架构是一个通用的CNN架构，首先将两张图像在通道维度进行concatenate，然后经过一些列的conv、pool、upsample等等又最终refine到和输入图片一样的大小，并得到估计的光流结果，让网络去决定怎么学习图像对之间的运动信息。</p>
+<p>原理上讲，只要这个网络足够大，那么就能学习到光流信息，但是不确定像随机梯度下降这样的局部梯度优化可以使网络达到这一点，因此在这种网络的基础上引入两个图像帧之间的相关性计算，得到第二个网络FlowNetCorr</p>
+<h2 id="FlowNetCorr"><a href="#FlowNetCorr" class="headerlink" title="FlowNetCorr"></a>FlowNetCorr</h2><p>与FlowNetSimple将输入图像进行concatenate不同，FlowNetCorr先将输入的两张图像同时经过3个卷积层，然后引入一个<strong>correlation layer</strong>, 用于计算两个feature map各个位置处的相似度</p>
+<h2 id="Correlation-Layer"><a href="#Correlation-Layer" class="headerlink" title="Correlation Layer"></a>Correlation Layer</h2><p>对于size都是w×h×c的两个feature map f1, f2，定义f1的x1处与f2处的两个patch的相关性如下：</p>
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig1.png">
+</div>
+
+<p>其中patch的为边长为 <strong>K = 2k + 1</strong>的正方形，计算一次两个patch的相关度需要<strong>c×K^2</strong>次乘法(类似于卷积计算，在通道的维度也要进行点积)，如果遍历计算一个feature map中所有的位置与另一个feature map中所有位置的相关性，共需要<strong>w^2×h^2×c×K^2</strong>次乘法，计算量非常大，作者在文中提出了以下几个减小计算量的操作：</p>
+<ul>
+<li><p>对于上文提到的K = 2k + 1的邻域，作者直接令k = 0，即K = 1，相当于两个feature map进行1*1卷积</p>
+</li>
+<li><p>对于f1的每个位置x1，只计算f2中与f1的偏移不超过D = 2d + 1的点的相关度，输出的feature map的维度为<strong>w×h×D^2</strong>，实现过程中取D = 41，在此基础上加入stride的操作，<strong>实际上使用的D = 21</strong>，整个Correlation Layer的操作的示意图如下</p>
+</li>
+</ul>
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig2.png">
+</div>
+
+<p>代码实现如下(并非官方实现，是github上的一个高star实现，发现有些地方的实现与论文中有所出入，比如论文中并没有conv6_1这个卷积层，没有再深入分析)</p>
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig3.png">
+</div>
+
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig4.png">
+</div>
+
+<ul>
+<li><p> 为了补充图像的信息，将f1通过一个1*1的卷积层后与Correlation Layer生成的feature map在通道方向进行concatenate，得到的feature map送入后续的卷积层</p>
+</li>
+<li><p>注意到论文的架构图中对Correlation Layer进行了sqrt的操作，作者没有在文中提到这里进行sqrt的原因，在代码实现的过程中也没有看到这个操作，看到在flownet2代码的issue中作者提到了这个<a target="_blank" rel="noopener" href="https://github.com/lmb-freiburg/flownet2/issues/49#issuecomment-462037012">问题</a></p>
+</li>
+</ul>
+<h2 id="Refinement"><a href="#Refinement" class="headerlink" title="Refinement"></a>Refinement</h2><div align=center>
+<img src="/all_images/FlowNet1.0/fig5.png">
+</div>
+
+<p>这一个模块就是一个类似U-Net的coarse-to-fine的过程，使用反卷积进行上采样并融合之前的feature map以用及上一层predict的feature map，这样就保留了上一级的高级high-level information以及低层的fine local information, 这个过程共重复4次，即上采样了4次，由于之前进行了6次下采样，因此最后一层predict的feature map是input的1/4</p>
+<p>相比于计算量更小的<strong>双线性插值</strong>，在这个分辨率下再进行refinement不再能显著能改善结果，因此就将这个分辨率的输出通过双线性插值的方法上采样至图像原来的尺寸作为最终的predict结果</p>
+<p>此外，作者在文中还提到了一种refine的方案，这个方案是之前的一篇<a target="_blank" rel="noopener" href="http://people.eecs.berkeley.edu/~malik/papers/brox-malik-pami-2010.pdf">文章</a>的变体，大概意思是说在1/4分辨率的尺寸上使用coarse-to-fine的方法迭代20次上采样到图像的原尺寸，然后在全尺寸上进行5次迭代得到predict的结果。这种方法在上采样的过程中考虑了边缘的平滑度，因此可以得到更平滑的结果以及亚像素级别的估计，但是同时也会增大计算量。实验部分”+v”的后缀表示使用了这种方法进行refine的方案，下图为作者在论文中给出的这种variational refinement的影响，没太看懂这个图想表达的意思，直观地来看，在小运动的情况下FlowNet预测的光流的结果挺差</p>
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig11.png">
+</div>
+
+
+<h1 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h1><div align=center>
+<img src="/all_images/FlowNet1.0/fig6.png">
+</div>
+
+<h2 id="现有数据集"><a href="#现有数据集" class="headerlink" title="现有数据集"></a>现有数据集</h2><ul>
+<li><p>Middlebury数据集的图像位移非常小，通常低于10pixel</p>
+</li>
+<li><p>KITTI数据集虽然包含大位移但是光流groundtruth是稀疏的且数据集是限定的运动下得到的</p>
+</li>
+<li><p>Sintel数据集有两个版本：Sintel Final以及Sintel Clean，前者考虑了motion blur以及fog，而后者没有这些影响，此外，Sintel数据集兼顾了大位移以及小位移的情况</p>
+</li>
+</ul>
+<p>获取pixel-wise的真实物体的光流groundtruth数据是很难的，此类数据集也很少，现有的数据集有Middlebury，KITTI以及Sintel，但是用于训练FlowNet的话，由上表的总结可以看出数据量是不够的，因此作者提出了一个合成数据集Flying Chairs，关于数据集的生成方法在论文中有详细的介绍，在此就不再赘述，只放一个Flying Chairs数据集的example</p>
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig7.png">
+</div>
+
+<p>为了方便光流的可视化，论文的附录中介绍了flow field的概念，如下图所示，将光流的方向以及大小分别用色谱中的color以及color intensity进行编码，<strong>每个像素处的光流是从正方形中心到该像素的向量</strong>(对应在网络架构中就是flow5, flow4, flow3的输出feature map的通道数都是2)</p>
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig8.png">
+</div>
+
+<h1 id="实验部分"><a href="#实验部分" class="headerlink" title="实验部分"></a>实验部分</h1><h2 id="训练细节"><a href="#训练细节" class="headerlink" title="训练细节"></a>训练细节</h2><ul>
+<li><p>使用Adam为优化方法，β1 = 0.9 and β2 = 0.999，由于每个像素其实都是一个训练样本，因此采用了较小的batch，min-batchsize=8 image pers，初始学习率 λ = 1e−4，在300k次迭代后每过100k次迭代学习率减小一半，在训练FlowNetCorr的过程中发现初始学习率为λ = 1e−4时会发现梯度爆炸，因此选择更小的学习率λ = 1e−6，在10k次迭代后增加到λ = 1e−4，之后按照之前提到的学习率调整策略进行调整</p>
+</li>
+<li><p>训练过程中将最高分辨率处预测结果上采样到groundtruth的图像的尺寸，然后计算EPE(endpoint error)，即预测的光流与ground truth欧氏距离在所有像素上的平均值来得到loss，这里没有使用多尺度的loss计算，不知道如果引入加权的多尺度的loss是否能得到更好的结果</p>
+</li>
+<li><p>网络只在Flying Chairs这个no-realistic的数据集上进行训练，并在Sintel数据集上进行fine tune</p>
+</li>
+</ul>
+<h1 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h1><div align=center>
+<img src="/all_images/FlowNet1.0/fig9.png">
+</div>
+
+<h2 id="Sintel数据集"><a href="#Sintel数据集" class="headerlink" title="Sintel数据集"></a>Sintel数据集</h2><ul>
+<li><p>在Sintel Clean中，FlowNetC的效果比FlowNetS好，在Sintel Final中，后者的表现更好</p>
+</li>
+<li><p>各版本的训练和测试结果都没有当前的SOTA EpicFlow的效果好</p>
+</li>
+</ul>
+<h2 id="KITTI数据集"><a href="#KITTI数据集" class="headerlink" title="KITTI数据集"></a>KITTI数据集</h2><ul>
+<li><p>FlowNetS的效果好于FlowNetC，但是二者的结果依然与SOTA相差较大</p>
+</li>
+<li><p>部分test的结果用”-“表示，作者没有明确说明，但是在论文Comparing the architectures小节的分析中可知，”-“应该表示的是EPE误差较大</p>
+</li>
+</ul>
+<h2 id="Middlebury数据集"><a href="#Middlebury数据集" class="headerlink" title="Middlebury数据集"></a>Middlebury数据集</h2><ul>
+<li>FlowNetS的效果稍好于FlowNetC，除了FlowNet+ft的对比结果，但是二者的结果依然与SOTA相差较大</li>
+</ul>
+<h2 id="Flying-Chairs数据集"><a href="#Flying-Chairs数据集" class="headerlink" title="Flying Chairs数据集"></a>Flying Chairs数据集</h2><ul>
+<li>因为网络就是在这个数据集上训练的，所以test的结果好于SOTA</li>
+</ul>
+<h2 id="时间因素"><a href="#时间因素" class="headerlink" title="时间因素"></a>时间因素</h2><ul>
+<li>很多方法只提供了在单cpu上的时间（而我们的网络没法在CPU上跑起来），所以对比了各个版本的网络与提供了GPU时间的方法的时间开销，结果表明FlowNet在GPU上的开销要少于当前实时的光流估计的SOTA EPPM，尤其是<strong>FlowNetS和FlowNet+ft比EPPM快了两倍</strong></li>
+</ul>
+<h2 id="结果分析"><a href="#结果分析" class="headerlink" title="结果分析"></a>结果分析</h2><h3 id="训练数据集"><a href="#训练数据集" class="headerlink" title="训练数据集"></a>训练数据集</h3><ul>
+<li><p>作者尝试了只使用Sintel数据集进行训练，发现在test的时候EPE比在Flying Chairs上训练并在Sintel上finetune的网络高了1 pixel</p>
+</li>
+<li><p>尽管Flying Chairs数据集已经很大了，但是数据增强的方法还是有必要的，采用数据增强的方法可以使EPE降低2 pixel</p>
+</li>
+</ul>
+<h3 id="不同网络结构的结果对比"><a href="#不同网络结构的结果对比" class="headerlink" title="不同网络结构的结果对比"></a>不同网络结构的结果对比</h3><ul>
+<li><p>FlowNetS在Sintel Final上的泛化性能强于FlowNetC，FlowNetC在Flying chairs和Sintel Clean上的性能强于FlowNetS。Flying Chairs与Sintel Final相比，没有motion blur以及fog，说明FlowNetC对数据有一点过拟合</p>
+</li>
+<li><p>FlowNetC在处理大位移是似乎遇到了些麻烦，FlowNetS+ft对于最大位移超过40pixel的误差达到了43.3px，而FlowNetC+ft对于最大位移超过40pixel的误差达到了48px，这一点是因为网络在设计的时候就设定了max displacement，这一点可以通过增大训练时max displacement值，但是会增大计算开销</p>
+</li>
+</ul>
+<div align=center>
+<img src="/all_images/FlowNet1.0/fig10.png">
+</div>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/124400267">基于FlowNet的光流估计</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/ClementPinard/FlowNetPytorch">FlowNetPytorch</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/ClementPinard/Pytorch-Correlation-extension">Pytorch-Correlation-extension</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/14/MobileNetv2/" rel="prev" title="MobileNetv2">
+      <i class="fa fa-chevron-left"></i> MobileNetv2
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/14/FlowNet2-0/" rel="next" title="FlowNet2.0">
+      FlowNet2.0 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E8%B4%A1%E7%8C%AE"><span class="nav-number">1.</span> <span class="nav-text">主要贡献</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E6%9E%B6%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">网络架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#FlowNetSimple"><span class="nav-number">2.1.</span> <span class="nav-text">FlowNetSimple</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FlowNetCorr"><span class="nav-number">2.2.</span> <span class="nav-text">FlowNetCorr</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Correlation-Layer"><span class="nav-number">2.3.</span> <span class="nav-text">Correlation Layer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Refinement"><span class="nav-number">2.4.</span> <span class="nav-text">Refinement</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">3.</span> <span class="nav-text">数据集</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%B0%E6%9C%89%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">3.1.</span> <span class="nav-text">现有数据集</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E9%83%A8%E5%88%86"><span class="nav-number">4.</span> <span class="nav-text">实验部分</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E7%BB%86%E8%8A%82"><span class="nav-number">4.1.</span> <span class="nav-text">训练细节</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">5.</span> <span class="nav-text">实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Sintel%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">5.1.</span> <span class="nav-text">Sintel数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KITTI%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">5.2.</span> <span class="nav-text">KITTI数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Middlebury%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">5.3.</span> <span class="nav-text">Middlebury数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flying-Chairs%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">5.4.</span> <span class="nav-text">Flying Chairs数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E5%9B%A0%E7%B4%A0"><span class="nav-number">5.5.</span> <span class="nav-text">时间因素</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E6%9E%9C%E5%88%86%E6%9E%90"><span class="nav-number">5.6.</span> <span class="nav-text">结果分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">5.6.1.</span> <span class="nav-text">训练数据集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84%E7%9A%84%E7%BB%93%E6%9E%9C%E5%AF%B9%E6%AF%94"><span class="nav-number">5.6.2.</span> <span class="nav-text">不同网络结构的结果对比</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

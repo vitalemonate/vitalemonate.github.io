@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述GCN系列共两篇文章，GCNv1为2018年发表在ICRA上的Geometric Correspondence Network for Camera Motion Estimation, GCNv2为发表在R-AL上的GCNv2: Efficient Correspondence Prediction for Real-Time SLAM。二者都是基于CNN的提取特征点和局部描述符的网络。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GCNv2系列">
+<meta property="og:url" content="http://example.com/2021/11/06/GCN%E7%B3%BB%E5%88%97/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述GCN系列共两篇文章，GCNv1为2018年发表在ICRA上的Geometric Correspondence Network for Camera Motion Estimation, GCNv2为发表在R-AL上的GCNv2: Efficient Correspondence Prediction for Real-Time SLAM。二者都是基于CNN的提取特征点和局部描述符的网络。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/1.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/2.png">
+<meta property="og:image" content="http://example.com/all_images/GCN%E7%B3%BB%E5%88%97/4.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/3.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/5.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/6.png">
+<meta property="og:image" content="http://example.com/all_images/GCN%E7%B3%BB%E5%88%97/7.png">
+<meta property="og:image" content="http://example.com/all_images/GCN%E7%B3%BB%E5%88%97/8.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/9.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/10.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/11.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/12.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/13.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/14.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/15.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/16.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/17.png">
+<meta property="og:image" content="http://example.com/all_images/GCN%E7%B3%BB%E5%88%97/18.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/19.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/20.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/21.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/22.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/23.png">
+<meta property="og:image" content="http://example.com/all_images/GCN系列/24.png">
+<meta property="article:published_time" content="2021-11-06T07:33:41.000Z">
+<meta property="article:modified_time" content="2021-11-07T12:56:59.299Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/GCN系列/1.png">
+
+<link rel="canonical" href="http://example.com/2021/11/06/GCN%E7%B3%BB%E5%88%97/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>GCNv2系列 | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/11/06/GCN%E7%B3%BB%E5%88%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          GCNv2系列
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-11-06 15:33:41" itemprop="dateCreated datePublished" datetime="2021-11-06T15:33:41+08:00">2021-11-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-11-07 20:56:59" itemprop="dateModified" datetime="2021-11-07T20:56:59+08:00">2021-11-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>GCN系列共两篇文章，GCNv1为2018年发表在ICRA上的<a target="_blank" rel="noopener" href="https://ieeexplore.ieee.org/document/8260906/">Geometric Correspondence Network for Camera Motion Estimation</a>, GCNv2为发表在R-AL上的<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1902.11046.pdf">GCNv2: Efficient Correspondence Prediction for Real-Time SLAM</a>。二者都是基于CNN的提取特征点和局部描述符的网络。</p>
+<span id="more"></span>
+<h1 id="GCNv1"><a href="#GCNv1" class="headerlink" title="GCNv1"></a>GCNv1</h1><p>GCNv1的网络结构为CNN+RNN，训练的思想为<strong>Learning by warping</strong>: 借助刚体变换，通过将source frame中的点warp到reference frame中实现对网络的优化</p>
+<h2 id="Learning-by-warping"><a href="#Learning-by-warping" class="headerlink" title="Learning by warping"></a>Learning by warping</h2><p>作者在Introduction中有下面一段话:</p>
+<blockquote>
+<p>To train the network we extract high gradient points in one image and warp them using the camera motion to the next image. It is important to note that we do not try to learn to reproduce the high gradient points or any standard descriptors based on them, but rather the network learns to find features and descriptors that can be matched well. In fact, the points in the warped image may not even be as detectable based on the gradient as they were in the unwarped image</p>
+</blockquote>
+<p>网络学习的重点在于找到那些<strong>适合匹配的特征点</strong>，而不是普通意义上的那些<strong>high gradient points</strong>。作者先在一幅图像中提取high gradient points，然后通过warping找到这些点在另一幅图像中的对应点。事实上这些warp到新图像中的点也许并不是该图像上的high gradient points。</p>
+<h2 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h2><div align="center">
+<img src="/all_images/GCN系列/1.png">
+</div>
+
+<p>整个网络可以分为两部分：CNN+RCNN。CNN的结构为ResNet-50 + Deconvolution + shortcut的形式结构</p>
+<h3 id="特征关联"><a href="#特征关联" class="headerlink" title="特征关联"></a>特征关联</h3><p>所谓特征关联，其实就是选出正确的特征点，在两张图片中，他们之间的相对位姿已经由ground-truth提供了，所以如果一张图片中的一个特征点能够按照相对位姿投影到另一张图片中对应的特征点上，那么这就是一对正样本，否则就是负样本。具体实现的方式使用的是深度度量学习（<strong>Deep Metric Learning</strong>），核心在于损失函数<strong>triplet loss</strong>的使用</p>
+<div align="center">
+<img src="/all_images/GCN系列/2.png">
+</div>
+
+<p>其中的f为CNN输出的feature map，<img src="/all_images/GCN%E7%B3%BB%E5%88%97/4.png">是两个feature map的L2距离，m为margin，在实验中被设定为1，x为第一幅图像中的特征点，y*为正样本，是x点warp到第二幅图像中的点，z*为负样本，是第二幅图像中除了y以外所有的特征点中与x点的feature map的L2距离最小的点，这个样本的选取策略称为<strong>hardest negative sample mining</strong>。其实就是正样本以外的与anchor距离最近的样本，这个loss的设计有点<strong>类似特征匹配后的radio test</strong>，都是希望最好的匹配与次好的匹配之间存在一定的差距。</p>
+<div align="center">
+<img src="/all_images/GCN系列/3.png">
+</div>
+
+<p>作者称任何不是正例的match都可以当作是负例，但是选取负例候选集合中最好的作为负例，有助于loss函数，可以加速metric learning。</p>
+<h3 id="Bidirectional-RCNN"><a href="#Bidirectional-RCNN" class="headerlink" title="Bidirectional RCNN"></a>Bidirectional RCNN</h3><p>CNN主要获取图像的空域信息，RCNN主要获取图像的时域信息，将RCNN表达如下</p>
+<div align="center">
+<img src="/all_images/GCN系列/5.png">
+</div>
+
+<p>作者将关键点的检测看作是一个二分类问题，因此会在网络的顶层计算交叉熵</p>
+<div align="center">
+<img src="/all_images/GCN系列/6.png">
+</div>
+
+<p>其中o为预测的关键点，cx为2D点的标签(提前在数据集上提取Harris角点得到标签)，实验中<img src="/all_images/GCN%E7%B3%BB%E5%88%97/7.png">和<img src="/all_images/GCN%E7%B3%BB%E5%88%97/8.png">分别为0.1和1.0</p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>作者在TUM的fr2数据集上训练，在fr1/fr3上test，数据集中特征点的标签是预先提取Harris角点得到的。下图是作者在TUM和KITTI上对比GCN与其他特征点在motion estimation方面的性能的实验结果</p>
+<div align="center">
+<img src="/all_images/GCN系列/9.png">
+</div>
+
+<div align="center">
+<img src="/all_images/GCN系列/10.png">
+</div>
+
+<p>此外作者实现了一个简单的基于GCN的SLAM系统，并与ORB-SLAM，Elastic Fusion以及RGBDTAM进行了对比</p>
+<div align="center">
+<img src="/all_images/GCN系列/11.png">
+</div>
+
+<h1 id="GCNv2"><a href="#GCNv2" class="headerlink" title="GCNv2"></a>GCNv2</h1><p>GCNv1存在的问题是<strong>计算开销大以及模型的inference需要多帧图像</strong>。GCNv2相比GCNv1做了以下改进：</p>
+<ul>
+<li><p>使用SuperPoint并代替ResNet-50并进行修剪，此外去掉了RCNN</p>
+</li>
+<li><p>在顶层增加binary activation layer用于生成binary</p>
+</li>
+</ul>
+<p>达到了以下的效果：</p>
+<ul>
+<li><p>保证和GCN相近的精度，并大幅减小inference的时间</p>
+</li>
+<li><p>在训练中加入二进制的feature vector来加速匹配</p>
+</li>
+<li><p>提出一个在ORB-SLAM2中用GCNv2代替ORB特征的SLAM系统GCN-SLAM，可以在TX2上达到实时的性能，证明GCNv2的effectiveness and robustness</p>
+</li>
+</ul>
+<h2 id="网络结构-1"><a href="#网络结构-1" class="headerlink" title="网络结构"></a>网络结构</h2><div align="center">
+<img src="/all_images/GCN系列/12.png">
+</div>
+
+<p>Backbone相比于SuperPoint的不同(在arxiv的<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1902.11046v2.pdf">v2版</a>中有这个detail，v3版中没有提到这点):</p>
+<ul>
+<li><p>GCNv2的encoder部分做了四次下采样，feature map的每个entry相当于原图中16×16的patch，而SuperPoint只做了三次下采样</p>
+</li>
+<li><p>将SuperPoint中的池化层全部换为kernel size=4×4，stride=2, padding=1的卷积核</p>
+</li>
+<li><p>Superpoint的输入图像的尺寸为320×240，文章中GCNv2的输入图像也是320×240，作者后续在github中也提供了640×480训练的模型</p>
+</li>
+</ul>
+<p><a target="_blank" rel="noopener" href="https://github.com/jiexiong2016/GCNv2_SLAM/blob/master/GCN2/Network.md">源码</a>中的实现</p>
+<div align="center">
+<img src="/all_images/GCN系列/13.png">
+</div>
+
+<h3 id="二值化描述子"><a href="#二值化描述子" class="headerlink" title="二值化描述子"></a>二值化描述子</h3><p>GCNv2设计了和ORB同样格式的二进制描述子，在网络的top层增加一个binary激活层(但是作者在<strong>github中给出的网络结构的源码中并没有这一层</strong>)，这层是被设计为一符号函数的形式，因此并不是处处都可导的，作者采用了<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1602.02830.pdf">Binarized Neural Networks</a>中的解决方法，最终二进制激活层的形式如下</p>
+<div align="center">
+<img src="/all_images/GCN系列/14.png">
+</div>
+
+<p>其实就是将sign近似成了tanh的形式</p>
+<div align="center">
+<img src="/all_images/GCN系列/15.png">
+</div>
+
+<p>作者称使用上面这种近似的方法比<a target="_blank" rel="noopener" href="https://openaccess.thecvf.com/content_cvpr_2016/papers/Lin_Learning_Compact_Binary_CVPR_2016_paper.pdf">另一种方法</a>：通过最小化量化loss来直接得到二进制的输出，能更高效地训练网络（这里的高效可能是指网络更容易收敛？）</p>
+<p>作者做了实验证明了二进制描述子确实比浮点数的描述子的匹配速度更快</p>
+<div align="center">
+<img src="/all_images/GCN系列/16.png">
+</div>
+
+<h3 id="度量学习"><a href="#度量学习" class="headerlink" title="度量学习"></a>度量学习</h3><p>作者保留了GCNv1的一个关键贡献——度量学习，triplet loss的形式如下</p>
+<div align="center">
+<img src="/all_images/GCN系列/17.png">
+</div>
+
+<p>其中m是margin(在实验中被设定为1)，d(x,y)为x,y两个向量的<strong>汉明距离的平方</strong>，作者称使用平方是因为这样训练更容易收敛。<img src="/all_images/GCN%E7%B3%BB%E5%88%97/18.png">为正确的匹配对，类似GCNv1，正样本是通过groundtruth的位姿通过warp得到的</p>
+<div align="center">
+<img src="/all_images/GCN系列/19.png">
+</div>
+
+<p>负样本的获取与GCNv1稍有不同，采用了<strong>exhaustive negative sample mining</strong>的方法，算法流程如下</p>
+<div align="center">
+<img src="/all_images/GCN系列/20.png">
+</div>
+
+<p>仔细看会发现，变化在于多个一个<strong>Relaxed Criteria</strong>(在实验中被设定为8)用于帮助选择，只有负样本和正样本之间的距离大于这个值时才会被选中，至于为什么这么做，原文给出了解释</p>
+<blockquote>
+<p>The relaxed criteria is used to increase the tolerance to potentially noisy data.</p>
+</blockquote>
+<p>最终网络的loss形式为</p>
+<div align="center">
+<img src="/all_images/GCN系列/21.png">
+</div>
+其中特征点的标签为预先在数据集上提取Shi-Tomasi角点得到的。
+
+<h2 id="GCN-SLAM"><a href="#GCN-SLAM" class="headerlink" title="GCN-SLAM"></a>GCN-SLAM</h2><p>作者在ORB-SLAM2中使用GCNv2代替ORB特征，名为GCN-SLAM，作者称在Intel i7-7700HQ和mobile version NVIDIA 1070的笔记本上可以达到70fps并在TX2上达到20fps，GCNv2-tiny可以达到40fps。特征提取的流程对比如下</p>
+<div align="center">
+<img src="/all_images/GCN系列/22.png">
+</div>
+
+<p>具体对ORB-SLAM2的改动：</p>
+<ul>
+<li><p>用GCNv2代替ORB并采用一种新的非极大值抵制的方法</p>
+</li>
+<li><p>关掉匀速运动模型，只采用参考帧模型，并且在参考中模型中使用最近邻匹配的方法进行匹配</p>
+</li>
+<li><p>关掉闭环检测以及位姿图优化</p>
+</li>
+<li><p>在训练所用的数据集上重新生成词袋</p>
+</li>
+</ul>
+<p>其中第二点和第三点都是为了排除其他因素对特征点性能评估造成的影响。</p>
+<h2 id="实验-1"><a href="#实验-1" class="headerlink" title="实验"></a>实验</h2><p>作者在SUN3D数据集上按1fps的频率进行采样，共得到44624张图像用于训练。在TUM数据集上进行评估，结果如下</p>
+<div align="center">
+<img src="/all_images/GCN系列/23.png">
+</div>
+
+<p>开启闭环的情况下的评估结果如下</p>
+<div align="center">
+<img src="/all_images/GCN系列/24.png">
+</div>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://www.pianshen.com/article/61111891744/">论文翻译 GCN-v1:Geometric Correspondence Network for Camera Motion Estimation</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/68026746">语义SLAM | 深度学习用于特征提取 : GCN-SLAM（一）</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/elaine_bao/article/details/50950969">二值化神经网络</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/11/01/Homography-changes-with-image-scaling/" rel="prev" title="Homography changes with image scaling">
+      <i class="fa fa-chevron-left"></i> Homography changes with image scaling
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#GCNv1"><span class="nav-number">2.</span> <span class="nav-text">GCNv1</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Learning-by-warping"><span class="nav-number">2.1.</span> <span class="nav-text">Learning by warping</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84"><span class="nav-number">2.2.</span> <span class="nav-text">网络结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E5%85%B3%E8%81%94"><span class="nav-number">2.2.1.</span> <span class="nav-text">特征关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bidirectional-RCNN"><span class="nav-number">2.2.2.</span> <span class="nav-text">Bidirectional RCNN</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">2.3.</span> <span class="nav-text">实验</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#GCNv2"><span class="nav-number">3.</span> <span class="nav-text">GCNv2</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84-1"><span class="nav-number">3.1.</span> <span class="nav-text">网络结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8C%E5%80%BC%E5%8C%96%E6%8F%8F%E8%BF%B0%E5%AD%90"><span class="nav-number">3.1.1.</span> <span class="nav-text">二值化描述子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%A6%E9%87%8F%E5%AD%A6%E4%B9%A0"><span class="nav-number">3.1.2.</span> <span class="nav-text">度量学习</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GCN-SLAM"><span class="nav-number">3.2.</span> <span class="nav-text">GCN-SLAM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C-1"><span class="nav-number">3.3.</span> <span class="nav-text">实验</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

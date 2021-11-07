@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述DXSLAM全称为 A Robust and Efficient Visual SLAM System with Deep Features，系统的整体架构图如下     DXSLAM主要在ORB-SLAM2中整合了基于CNN的feature，并将其用于重定位以及闭环检测。具体的贡献如下： 算法层面：  使用CNN(HF-Net)提取每张图像的关键点、局部描述子以及全局描述子  提出一种基于全">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2020 IROS DXSLAM">
+<meta property="og:url" content="http://example.com/2021/10/25/2020-IROS-DXSLAM/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述DXSLAM全称为 A Robust and Efficient Visual SLAM System with Deep Features，系统的整体架构图如下     DXSLAM主要在ORB-SLAM2中整合了基于CNN的feature，并将其用于重定位以及闭环检测。具体的贡献如下： 算法层面：  使用CNN(HF-Net)提取每张图像的关键点、局部描述子以及全局描述子  提出一种基于全">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/1.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/2.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/3.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/6.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/4.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/7.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/5.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/8.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/9.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/10.png">
+<meta property="og:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/11.png">
+<meta property="article:published_time" content="2021-10-25T02:31:05.000Z">
+<meta property="article:modified_time" content="2021-11-06T15:23:17.432Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/2020%20IROS%20DXSLAM/1.png">
+
+<link rel="canonical" href="http://example.com/2021/10/25/2020-IROS-DXSLAM/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>2020 IROS DXSLAM | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/10/25/2020-IROS-DXSLAM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          2020 IROS DXSLAM
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-10-25 10:31:05" itemprop="dateCreated datePublished" datetime="2021-10-25T10:31:05+08:00">2021-10-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-11-06 23:23:17" itemprop="dateModified" datetime="2021-11-06T23:23:17+08:00">2021-11-06</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p><strong>DXSLAM</strong>全称为 A Robust and Efficient Visual SLAM System with Deep Features，系统的整体架构图如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/1.png">
+</div>
+
+<p><strong>DXSLAM</strong>主要在<strong>ORB-SLAM2</strong>中整合了基于CNN的feature，并将其用于<strong>重定位以及闭环检测</strong>。具体的贡献如下：</p>
+<p>算法层面：</p>
+<ul>
+<li><p>使用CNN(<strong>HF-Net</strong>)提取每张图像的关键点、局部描述子以及全局描述子</p>
+</li>
+<li><p>提出一种基于全局描述子的重定位方法，比传统基于BOW的方法成功率更高且计算量更小</p>
+</li>
+<li><p>训练局部feature的视觉词袋，并结合<strong>局部描述子以及全局描述子</strong>，提出一个高度可靠的闭环检测方法</p>
+</li>
+</ul>
+<p>工程层面：</p>
+<ul>
+<li>通过使用<strong>OpenVINO</strong>以及<strong>FBoW</strong>(Fast Bag-of-Words)使系统从SIMD指令中获益，可以在<strong>没有GPU以及其他加速器的情况下在CPU上实时运行</strong>，自称是第一个可以在没有GPU支持的情况下达到实时的基于特征法的SLAM系统</li>
+</ul>
+<p>效果：</p>
+<ul>
+<li>实验结果表明本文提出的各个模块性能比baseline高很多，并且整个系统的轨迹误差也更低<span id="more"></span></li>
+</ul>
+<h1 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h1><h2 id="特征提取"><a href="#特征提取" class="headerlink" title="特征提取"></a>特征提取</h2><p>特征提取使用的是<strong>HF-Net</strong>，HF-Net的架构如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/2.png">
+</div>
+作者在论文中提到
+
+<blockquote>
+<p> This design choice is not only driven by <strong>functionalities</strong>,but also experimental results showing that the features from <strong>HF-Net are superior</strong> than those from alternative deep CNN feature extractors for the SLAM system.</p>
+</blockquote>
+<p>也就是说使用HF-Net并不仅仅是<strong>受其功能驱动</strong>，而且还因为在SLAM系统中使用HF-Net，<strong>会有比其他CNN更好的表现</strong>。这里提到HF-Net的功能应该指的是同时提取图像特征、局部描述子以及全局描述子的能力，而性能在后文的实验中有对比。</p>
+<p>作者使用intel的<strong>OpenVINO</strong>对HF-Net的预训练模型进行优化，在x86 CPU上重新实现了模型的推理，整个模型中只有<strong>双线性插值不能通过OpenVINO优化</strong>，所以将其移到OpenVINO推理之后的<strong>后处理阶段</strong>。</p>
+<h2 id="训练词袋"><a href="#训练词袋" class="headerlink" title="训练词袋"></a>训练词袋</h2><p>在<strong>OpenLORIS-Scene</strong>数据集上使用<strong>增量式</strong>的方法来训练词袋，具体流程如下：</p>
+<ul>
+<li><p>首先对每张图像使用HF-Net提取keypoint和对应的local descriptor</p>
+</li>
+<li><p>对每个pair的相邻帧，使用暴力匹配的方法进行匹配，将匹配的点对划分到<strong>已有的同一个叶子结点</strong>中，不匹配的feature<strong>增加一个新的结点</strong>。其中每个结点按照keypoint的得分<strong>最多保留前300个</strong></p>
+</li>
+<li><p>使用FBoW来构建词袋，训练的词袋是二进制的，可以加快ORB-SLAM2系统初始化时加载词袋的速度(<strong>6s -&gt; 40ms</strong>)</p>
+</li>
+</ul>
+<h2 id="使用global-descriptor进行重定位"><a href="#使用global-descriptor进行重定位" class="headerlink" title="使用global descriptor进行重定位"></a>使用global descriptor进行重定位</h2><p>这里涉及到获得图像global descriptor的两种方法：</p>
+<ul>
+<li><p>一种是基于BoW的方法，比如ORB-SLAM2在重定位时<strong>聚合local descriptor</strong>，计算词袋向量作为对当前帧的global descriptor</p>
+</li>
+<li><p>另外一种是基于CNN的端到端地计算图像的global descriptor</p>
+</li>
+</ul>
+<p>作者在论文中提到，基于CNN的global descriptor的图像检索<strong>已被广泛证明</strong>，与BoW方法相比，它<strong>对环境和视角变化的鲁棒性要强得多</strong>，所以作者使用HF-Net推理得到的<strong>global descriptor在关键帧数据库中寻找候选帧</strong>，然后使用<strong>PnP+RANSAC</strong>的标准方法在候选帧中筛析匹配点对并计算位姿</p>
+<h2 id="使用local-descriptor以及global-descriptor进行闭环检测"><a href="#使用local-descriptor以及global-descriptor进行闭环检测" class="headerlink" title="使用local descriptor以及global descriptor进行闭环检测"></a>使用local descriptor以及global descriptor进行闭环检测</h2><h2 id="闭环检测和重定位的区别"><a href="#闭环检测和重定位的区别" class="headerlink" title="闭环检测和重定位的区别"></a>闭环检测和重定位的区别</h2><p>由于错误的闭环检测(也就是FP)会给SLAM系统带来毁灭性的影响，所以闭环检测希望precision更高，而后者希望recall更高，Precision和Recall的定义如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/3.png">
+</div>
+
+<p>其中Precision从预测结果角度出发，描述了预测出来的正例结果中有多少是真实正例，即预测的正例有多少是准确的。Recall从真实结果角度出发，描述了真实正例有多少被挑选了出来。</p>
+<h2 id="DXSLAM的闭环检测的实现"><a href="#DXSLAM的闭环检测的实现" class="headerlink" title="DXSLAM的闭环检测的实现"></a>DXSLAM的闭环检测的实现</h2><p>从上边的系统流程图中可以看出，与原始的ORB-SLAM2相比，DXSLAM在闭环的第一步，即寻找闭环候选帧之后加入了<strong>使用global descriptor进一步筛选</strong>的步骤。关于这一步的必要性，作者称</p>
+<blockquote>
+<p>the BoW matching method aggregates local features by their distributions and <strong>discards their spatial relations</strong></p>
+</blockquote>
+<p>就是说局部描述子丢弃了局部特征的空间关系，而全局描述符可以保留这些信息，所以这一步是有意义的。关于这一点参考这个<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/31039746/answer/50516028">回答</a></p>
+<h1 id="评估"><a href="#评估" class="headerlink" title="评估"></a>评估</h1><h2 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h2><p>评估用到了四个数据集：TUM RGB-D、 <strong>OpenLORIS-Scene</strong>以及City Center和New College。TUM用来评估SLAM的<strong>定位精度</strong>，OpenLORIS-Scene这个数据集是2020年这篇论文的作者在ICRA上发表的一个数据集，主要用于评估算法的<strong>鲁棒性</strong>，而后两个数据集用于评估系统<strong>闭环检测的性能</strong>。</p>
+<h2 id="Feature-Evaluation"><a href="#Feature-Evaluation" class="headerlink" title="Feature Evaluation"></a>Feature Evaluation</h2><p>作者首先在OpenLORIS-Scene上评估了HF-Net的性能，对比的对象为手工设计的feature，以及其他基于CNN的feature，并尝试了不同keypoint与descriptor的组合。</p>
+<p><strong>说明：</strong></p>
+<ul>
+<li><p>为了不影响比较feature的性能，在这个评估中<strong>关掉了重定位以及闭环检测</strong></p>
+</li>
+<li><p>由于OpenLORIS-Scene中的corridor和home序列有较多featureless的场景，纯视觉的SLAM不太可能完全track整个场景，所以主要评估算法其他几个场景的表现(<strong>office + cafe + market</strong>)</p>
+</li>
+<li><p>下图的结果中的<strong>黑点</strong>代表一个<strong>序列</strong>（一个场景下有多个序列）的开始，<strong>蓝点和蓝线</strong>分别代表系统<strong>初始化以及tracking</strong>，每个场景左下角的百分比代表算法的<strong>average correct rate</strong>，值越大代表系统越鲁棒，右下角的浮点数代表<strong>average ATE RMSE</strong>，值越小代表系统精度越高。其中衡量算法鲁棒性的指标定义如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/6.png">
+</div></li>
+</ul>
+<ul>
+<li>DS-SLAM是在ORB-SLAM2的基础上移除了动态物体的影响</li>
+</ul>
+<p>实验结果如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/4.png">
+</div>
+
+<p><strong>结论：</strong></p>
+<ul>
+<li><p><strong>基于CNN的系统的鲁棒性都优于ORB-SLAM2以及DS-SLAM</strong>。这个结论我觉得不太合适，从表中的数据来看，只有<strong>HF-Net+HF-Net以及D2+BRIEF</strong>的组合在office + cafe + market上的鲁棒性（表中的百分数）都超过ORB-SLAM2，其他算法组合的鲁棒性是要低于ORB-SLAM2的</p>
+</li>
+<li><p>D2与BRIEF的组合的性能要比原本的D2-Net的性能好，包括鲁棒性和精度</p>
+</li>
+<li><p>与上一条结论不同，HF与BRIEF的组合并不比原本的HF-Net性能好，同样包括包括鲁棒性和精度</p>
+</li>
+<li><p>SuperPoint在弱光条件下，比如office序列，提取的特征少导致track失败，但是HF-Net并不会有这种问题</p>
+</li>
+</ul>
+<p><strong>疑问：</strong></p>
+<ul>
+<li><p>作者在介绍近些看比较出色的feature时提到了SuperPoint、D2-Net以及GCNv2，这里<strong>唯独没有评估GCNv2的性能</strong>，不知道是出于什么原因</p>
+</li>
+<li><p>由于这个数据集是作者自己提出的，然后在这个数据集上验证自己提出的算法比其他算法强，是不是不太有说服力呢？并且只在一个数据集上评估feature的性能，结果可能存在一定的不确定性，如果能够增加在其他数据集上比如EuRoC以及TartanAir的评估，说明力可能会更强</p>
+</li>
+</ul>
+<h2 id="Re-localization-Evaluation"><a href="#Re-localization-Evaluation" class="headerlink" title="Re-localization Evaluation"></a>Re-localization Evaluation</h2><p><strong>说明：</strong></p>
+<ul>
+<li><p>OpenLORIS-Scene数据集中的office场景有一些<strong>受控的挑战因素</strong>，所以作者在这个场景下评估了重定位的性能</p>
+</li>
+<li><p>评估重定位的指标如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/7.png">
+</div></li>
+</ul>
+<p>实验结果如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/5.png">
+</div>
+
+<p><strong>结论：</strong></p>
+<ul>
+<li><p>在所有情况下DXSLAM的表现都比ORB-SLAM2好</p>
+</li>
+<li><p>只有发生巨大的视角变化时(office-2)，DXSLAM才会重定位失败</p>
+</li>
+</ul>
+<h2 id="Loop-Closure-Detection-Evaluation"><a href="#Loop-Closure-Detection-Evaluation" class="headerlink" title="Loop Closure Detection Evaluation"></a>Loop Closure Detection Evaluation</h2><p>在City Center和New College数据集上评估系统闭环检测的能力，作者增加了一个实验组HF-FBoW，这个算法不使用global descriptor对闭环检测第一步得到的候选帧进行滤除，直接将FBoW得到的<strong>相似度最大</strong>的帧作为候选帧，这个对比实验可以验证<strong>global descriptor对于闭环检测性能的提高</strong>。实验结果如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/8.png">
+</div>
+
+<p><strong>结论：</strong></p>
+<ul>
+<li><p>HF-Net显著地提高了ORB-SLAM2的回环检测性能</p>
+</li>
+<li><p>local descriptor和global descriptor的组合显著地提高了系统的回环检测性能</p>
+</li>
+</ul>
+<h2 id="Full-System-Evaluation"><a href="#Full-System-Evaluation" class="headerlink" title="Full System Evaluation"></a>Full System Evaluation</h2><h3 id="Test-on-OpenLORIS-Scene"><a href="#Test-on-OpenLORIS-Scene" class="headerlink" title="Test on OpenLORIS-Scene"></a>Test on OpenLORIS-Scene</h3><p><strong>说明：</strong></p>
+<ul>
+<li><p>DXSLAM-no-incre为训练词袋时<strong>不使用增量式</strong>的方法</p>
+</li>
+<li><p>与Feature Evaluation相同，都只关注算法在<strong>office + cafe + market</strong>这几个场景下的表现</p>
+</li>
+</ul>
+<p>评估结果如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/9.png">
+</div>
+
+<p><strong>结论：</strong></p>
+<ul>
+<li><p>增量式地训练词袋可以使算法更高效合理(efficient and reasonable)</p>
+</li>
+<li><p>DXSLAM在<strong>环境变动情况下</strong>（从一个序列切换到另一个序列）的鲁棒性更好：比ORB-SLAM2跟踪到更多的轨迹并且ATE的RSME更小</p>
+</li>
+</ul>
+<h3 id="Test-on-TUM-RGB-D"><a href="#Test-on-TUM-RGB-D" class="headerlink" title="Test on TUM RGB-D"></a>Test on TUM RGB-D</h3><div align="center">
+<img src="/all_images/2020 IROS DXSLAM/10.png">
+</div>
+
+<p><strong>结论：</strong></p>
+<ul>
+<li>DXSLAM有较强的<strong>抵抗动态物体干扰的能力</strong>，即使没有像DS-SLAM一样将动态物体显式地移除</li>
+</ul>
+<p><strong>疑问：</strong></p>
+<ul>
+<li>作者只提供了在TUM的动态场景下的评估结果，<strong>并没有提供一般场景下的评估结果</strong>，结合在Feature Evaluation提出的疑问，DXSLAM在一般场景下的性能还有待进一步评测</li>
+</ul>
+<h2 id="Runtime-Performance"><a href="#Runtime-Performance" class="headerlink" title="Runtime Performance"></a>Runtime Performance</h2><p><strong>说明：</strong></p>
+<ul>
+<li><p>作者在GPU以及CPU上都进行了评测，使用的GPU为NVIDIA GeForce GTX <strong>1070</strong> GPU (GPU TDP 150 Watts)，CPU为Intel Core <strong>i7-10710U</strong> (CPU TDP 15 Watts, full system TDP 25 Watts)</p>
+</li>
+<li><p>使用的数据集为<strong>OpenLORIS-Scene的office-1序列</strong>，测试时将图像大小调整为<strong>640×480</strong></p>
+</li>
+</ul>
+<p>评测结果如下</p>
+<div align="center">
+<img src="/all_images/2020 IROS DXSLAM/11.png">
+</div>
+
+<p><strong>结论：</strong></p>
+<ul>
+<li><p>即使比其他的CNN多了计算global descriptor的步骤，<strong>HF-Net还是更高效</strong></p>
+</li>
+<li><p>在OpenVINO优化的情况下，HF-Net可以达到46.2ms（<strong>21.6fps</strong>)，相比没有优化的CPU实现减少了68%。但是这只是HF-Net提取特征点和描述子的时间，<strong>不包括SLAM系统track的时间</strong>。ROS版本的代码中特征提取与SLAM的跟踪分别在两个节点，在同样的机器上从摄像头读取图像，最终可以实现以<strong>15fps</strong>的频率输出位姿</p>
+</li>
+</ul>
+<h1 id="未来方向"><a href="#未来方向" class="headerlink" title="未来方向"></a>未来方向</h1><ul>
+<li><p>通过改进<strong>专用于SLAM</strong>的CNN架构和训练策略来得到更好的feature，比如SEKD</p>
+</li>
+<li><p>整合deep feature到更先进的基于特征点的SLAM，比如ORB-SLAM3</p>
+</li>
+</ul>
+<h1 id="Related-work"><a href="#Related-work" class="headerlink" title="Related work"></a>Related work</h1><h2 id="SLAM综述"><a href="#SLAM综述" class="headerlink" title="SLAM综述"></a>SLAM综述</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://ieeexplore.ieee.org/document/7747236">2016 T-RO, Past, present, and future of simultaneous localization and mapping: Toward the robust-perception age</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1909.05214">2021 Journal of Global Positioning Systems, A survey of simultaneous localization and mapping with an envision in 6g wireless networks</a></p>
+</li>
+</ul>
+<h2 id="Features"><a href="#Features" class="headerlink" title="Features"></a>Features</h2><ul>
+<li><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1712.07629">2018 CVPR, SuperPoint: Selfsupervised interest point detection and description</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1905.03561">2019 CVPR, D2-Net: A trainable CNN for joint detection and description of local features</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1902.11046">2019 R-AL, GCNv2: Efficient correspondence prediction for real-time SLAM</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2006.05077">2020 arXiv, SEKD: Self-evolving keypoint detection and description</a></p>
+</li>
+</ul>
+<h2 id="Global-descriptor"><a href="#Global-descriptor" class="headerlink" title="Global descriptor"></a>Global descriptor</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1511.07247">2016 CVPR, NetVLAD: CNN architecture for weakly supervised place recognition</a></li>
+</ul>
+<h2 id="Features-Global-descriptor"><a href="#Features-Global-descriptor" class="headerlink" title="Features + Global descriptor"></a>Features + Global descriptor</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1812.03506">2019 CVPR, HF-Net: From coarse to fine: Robust hierarchical localization at large scale</a></li>
+</ul>
+<h2 id="Dataset"><a href="#Dataset" class="headerlink" title="Dataset"></a>Dataset</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1911.05603">2020 ICRA, Are we ready for service robots? the OpenLORIS-Scene datasets for lifelong SLAM</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/10/12/2021-R-AL-OV2SLAM/" rel="prev" title="2021 R-AL OV2SLAM">
+      <i class="fa fa-chevron-left"></i> 2021 R-AL OV2SLAM
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/11/01/Homography-changes-with-image-scaling/" rel="next" title="Homography changes with image scaling">
+      Homography changes with image scaling <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">具体实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E6%8F%90%E5%8F%96"><span class="nav-number">2.1.</span> <span class="nav-text">特征提取</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E8%AF%8D%E8%A2%8B"><span class="nav-number">2.2.</span> <span class="nav-text">训练词袋</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8global-descriptor%E8%BF%9B%E8%A1%8C%E9%87%8D%E5%AE%9A%E4%BD%8D"><span class="nav-number">2.3.</span> <span class="nav-text">使用global descriptor进行重定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8local-descriptor%E4%BB%A5%E5%8F%8Aglobal-descriptor%E8%BF%9B%E8%A1%8C%E9%97%AD%E7%8E%AF%E6%A3%80%E6%B5%8B"><span class="nav-number">2.4.</span> <span class="nav-text">使用local descriptor以及global descriptor进行闭环检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AD%E7%8E%AF%E6%A3%80%E6%B5%8B%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">2.5.</span> <span class="nav-text">闭环检测和重定位的区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DXSLAM%E7%9A%84%E9%97%AD%E7%8E%AF%E6%A3%80%E6%B5%8B%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.6.</span> <span class="nav-text">DXSLAM的闭环检测的实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0"><span class="nav-number">3.</span> <span class="nav-text">评估</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">3.1.</span> <span class="nav-text">数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Feature-Evaluation"><span class="nav-number">3.2.</span> <span class="nav-text">Feature Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Re-localization-Evaluation"><span class="nav-number">3.3.</span> <span class="nav-text">Re-localization Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Loop-Closure-Detection-Evaluation"><span class="nav-number">3.4.</span> <span class="nav-text">Loop Closure Detection Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Full-System-Evaluation"><span class="nav-number">3.5.</span> <span class="nav-text">Full System Evaluation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Test-on-OpenLORIS-Scene"><span class="nav-number">3.5.1.</span> <span class="nav-text">Test on OpenLORIS-Scene</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Test-on-TUM-RGB-D"><span class="nav-number">3.5.2.</span> <span class="nav-text">Test on TUM RGB-D</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Runtime-Performance"><span class="nav-number">3.6.</span> <span class="nav-text">Runtime Performance</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%AA%E6%9D%A5%E6%96%B9%E5%90%91"><span class="nav-number">4.</span> <span class="nav-text">未来方向</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Related-work"><span class="nav-number">5.</span> <span class="nav-text">Related work</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SLAM%E7%BB%BC%E8%BF%B0"><span class="nav-number">5.1.</span> <span class="nav-text">SLAM综述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Features"><span class="nav-number">5.2.</span> <span class="nav-text">Features</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Global-descriptor"><span class="nav-number">5.3.</span> <span class="nav-text">Global descriptor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Features-Global-descriptor"><span class="nav-number">5.4.</span> <span class="nav-text">Features + Global descriptor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Dataset"><span class="nav-number">5.5.</span> <span class="nav-text">Dataset</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="现有问题梯度消失或梯度爆炸假设每一层的误差梯度都是一个小于1的数，深度越深，梯度越小。反之，如果假设误差梯度都是一个大于1的数，深度越深，梯度越大 解决方法：数据标准化，权重初始化以及BN来解决 退化问题在不断增加神经网络的深度时，会出现一个Degradation（退化）的问题，即准确率会先上升然后达到饱和，再持续增加深度则会导致准确率下降。这并不是过拟合的问题，因为不光在测试集上误差增大，训练集">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ResNet">
+<meta property="og:url" content="http://example.com/2021/06/14/ResNet/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="现有问题梯度消失或梯度爆炸假设每一层的误差梯度都是一个小于1的数，深度越深，梯度越小。反之，如果假设误差梯度都是一个大于1的数，深度越深，梯度越大 解决方法：数据标准化，权重初始化以及BN来解决 退化问题在不断增加神经网络的深度时，会出现一个Degradation（退化）的问题，即准确率会先上升然后达到饱和，再持续增加深度则会导致准确率下降。这并不是过拟合的问题，因为不光在测试集上误差增大，训练集">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/ResNet/fig0.png">
+<meta property="og:image" content="http://example.com/all_images/ResNet/fig7.png">
+<meta property="og:image" content="http://example.com/all_images/ResNet/fig2.png">
+<meta property="og:image" content="http://example.com/all_images/ResNet/fig3.png">
+<meta property="og:image" content="http://example.com/all_images/ResNet/fig1.png">
+<meta property="og:image" content="http://example.com/all_images/ResNet/fig4.png">
+<meta property="og:image" content="http://example.com/all_images/ResNet/fig8.png">
+<meta property="article:published_time" content="2021-06-14T08:02:46.000Z">
+<meta property="article:modified_time" content="2021-10-11T12:30:53.710Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/ResNet/fig0.png">
+
+<link rel="canonical" href="http://example.com/2021/06/14/ResNet/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ResNet | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/14/ResNet/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas are not pulled out of the air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ResNet
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-06-14 16:02:46" itemprop="dateCreated datePublished" datetime="2021-06-14T16:02:46+08:00">2021-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-10-11 20:30:53" itemprop="dateModified" datetime="2021-10-11T20:30:53+08:00">2021-10-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Backbone/" itemprop="url" rel="index"><span itemprop="name">Backbone</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="现有问题"><a href="#现有问题" class="headerlink" title="现有问题"></a>现有问题</h1><h2 id="梯度消失或梯度爆炸"><a href="#梯度消失或梯度爆炸" class="headerlink" title="梯度消失或梯度爆炸"></a>梯度消失或梯度爆炸</h2><p>假设每一层的误差梯度都是一个小于1的数，深度越深，梯度越小。反之，如果假设误差梯度都是一个大于1的数，深度越深，梯度越大</p>
+<p>解决方法：数据标准化，权重初始化以及BN来解决</p>
+<h2 id="退化问题"><a href="#退化问题" class="headerlink" title="退化问题"></a>退化问题</h2><p>在不断增加神经网络的深度时，会出现一个Degradation（退化）的问题，即准确率会先上升然后达到饱和，再持续增加深度则会导致准确率下降。这并不是过拟合的问题，因为不光在测试集上误差增大，训练集本身误差也会增大。如图示：</p>
+<div align=center>
+<img src="/all_images/ResNet/fig0.png">
+</div>
+解决方法：论文中提出的残差结构
+<span id="more"></span>
+
+<h1 id="亮点"><a href="#亮点" class="headerlink" title="亮点"></a>亮点</h1><ul>
+<li>超深的网络结构（突破1000层）</li>
+<li>提出residual模块</li>
+<li>使用BN加速训练(丢弃Dropout)</li>
+</ul>
+<h1 id="动机"><a href="#动机" class="headerlink" title="动机"></a>动机</h1><p>假设现有一个比较浅的网络（Shallow Net）已达到了饱和的准确率，这时在它后面再加上几个恒等映射层（Identify mapping，即 y = x，输出等于输入），这样就增加了网络的深度，并且起码误差不会增加，即更深的网络不会带来训练集上的误差上升。这里提到的 “使用恒等映射直接将前一层输出传到后面” 的思想，便是深度残差网络的灵感来源</p>
+<p>ResNet 引入残差网络结构 （residual network），通过这种残差网络结构，可以把网络层弄得很深（目前可达1000+层），并且最终的分类效果也非常好，残差网络的基本结构如图示：（该图带有跳跃结构）</p>
+<div align=center>
+<img src="/all_images/ResNet/fig7.png">
+</div>
+
+<p>假定某段神经网络的输入是x，期望输出是H(x)，即H(x)是期望的复杂潜在映射。如果要学习这样的模型，则训练难度会比较大；回想前面的假设，如果已经学习到较饱和的准确率（或者当发现某一层的误差变大时），那么接下来的学习目标就转变为恒等映射的学习，也就是使输入 x 近似于输出 H(x)，以保持在后面的层次中不会造成精度下降。</p>
+<p>在上面的残差网络结构图中，通过 “shortcut connections” 的方式，直接把输入 x 传到输出作为初始结果，输出结果为 H(x) = F(x) + x，当 F(x) = 0 时，那么 H(x) = x， 也就是上面提到的恒等映射。于是 ResNet 相当于将学习目标改变了，不再是学习一个完整的输出，而是目标值 H(x) 和 x 的差值，也就是所谓的残差 F(x) = H(x) - x，因此，<strong>后面的训练目标就是将残差结果逼近于0，使得随着网络层数加深，准确率不下降</strong></p>
+<h1 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h1><p>作者共提出了5种不同深度的ResNet，分别为18-layer,34-layer,50-layer,101-layer, 152-layer</p>
+<div align=center>
+<img src="/all_images/ResNet/fig2.png">
+</div>
+<br>
+
+<p>ResNet的网络架构的设计遵循了和VGG相同的思想：</p>
+<ul>
+<li><p>特征图尺寸相同的网络层，这些层产生特征图的通道数也相同</p>
+</li>
+<li><p>如果特征图尺寸减半，则增加一倍的通道数来保证每层的复杂度相同。也就是<strong>每下采样一次则卷积核的个数增加一倍</strong></p>
+</li>
+</ul>
+<p>下图为VGG-19, plain network(ResNet-34无shortcut connections)以及ResNet-34的网络结构对比</p>
+<div align=center>
+<img src="/all_images/ResNet/fig3.png">
+</div>
+
+<p>在上图中可以看出shortcut connections”具有实线和虚线之分，其区别主要在于：</p>
+<ul>
+<li><p>实线的connection部分，表示通道数相同，feature map 也是相同的，所以采用计算方式为 H(x) = F(x) + x</p>
+</li>
+<li><p>虚线的connection部分，表示通道数和feature map的大小不同，如上图的第一个绿色矩形和第三个绿色矩形，分别是64通道和128通道，通道不同，采用的计算方式 H(x) = F(x) + Wx，其中 W 是卷积操作，用来调整维度和通道数。</p>
+</li>
+</ul>
+<h1 id="残差结构"><a href="#残差结构" class="headerlink" title="残差结构"></a>残差结构</h1><div align=center>
+<img src="/all_images/ResNet/fig1.png">
+</div>
+
+<p>上图的的左边的结构为ResNet-18以及ResNet-34所使用的残差块，出于运算量的原因，在ResNet-50, ResNet-101以及ResNet-152中都使用的是右边的结构，其中1×1卷积核用于通道数的调整。</p>
+<p>左图是两个3×3的卷积，参数数目为3×3×256×256×2=1179648（上图是64通道，为保证计算具有对比性，调整为与右图一致的通道数256）。右图第一个卷积核把256维通道数降为64维，然后在最后面通过 1×1 卷积恢复，整体上用的参数数目：1×1×256×64+3×3×64×64+1×1×64×256=69632，右图的参数数量比左图减少了约17倍。因此，右图主要目的就是为了减少参数量，从而减少计算量</p>
+<h1 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h1><h2 id="解决退化现象"><a href="#解决退化现象" class="headerlink" title="解决退化现象"></a>解决退化现象</h2><div align=center>
+<img src="/all_images/ResNet/fig4.png">
+</div>
+左图是不同深度的plain network的训练误差以及验证误差，右图是不同深度的ResNet的训练误差以及验证误差，可以看出作者提出的这种残差结构确实可以解决网络深度增加时产生的退化现象
+
+<h2 id="效果好"><a href="#效果好" class="headerlink" title="效果好"></a>效果好</h2><div align=center>
+<img src="/all_images/ResNet/fig8.png">
+</div>
+
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1T7411T7wa">ResNet网络结构，BN以及迁移学习详解</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_34823656/article/details/96010327">隐藏在ResNet背后的原理</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/JACK_YOUNG007/article/details/89341254">神经网络：ResNet 论文学习总结（一）</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/35019701">Paper阅读笔记《Highway Networks》</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/14/VGG/" rel="prev" title="VGG">
+      <i class="fa fa-chevron-left"></i> VGG
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/14/DenseNet/" rel="next" title="DenseNet">
+      DenseNet <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%B0%E6%9C%89%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">现有问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E6%B6%88%E5%A4%B1%E6%88%96%E6%A2%AF%E5%BA%A6%E7%88%86%E7%82%B8"><span class="nav-number">1.1.</span> <span class="nav-text">梯度消失或梯度爆炸</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%80%E5%8C%96%E9%97%AE%E9%A2%98"><span class="nav-number">1.2.</span> <span class="nav-text">退化问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%AE%E7%82%B9"><span class="nav-number">2.</span> <span class="nav-text">亮点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8A%A8%E6%9C%BA"><span class="nav-number">3.</span> <span class="nav-text">动机</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84"><span class="nav-number">4.</span> <span class="nav-text">网络结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E7%BB%93%E6%9E%84"><span class="nav-number">5.</span> <span class="nav-text">残差结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">6.</span> <span class="nav-text">实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E9%80%80%E5%8C%96%E7%8E%B0%E8%B1%A1"><span class="nav-number">6.1.</span> <span class="nav-text">解决退化现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%88%E6%9E%9C%E5%A5%BD"><span class="nav-number">6.2.</span> <span class="nav-text">效果好</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas are not pulled out of the air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
