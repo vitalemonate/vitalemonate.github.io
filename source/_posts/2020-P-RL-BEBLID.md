@@ -1,6 +1,7 @@
 ---
-title: 2020_P-RL_BEBLID
+title: 2020 P-RL BEBLID
 date: 2021-11-14 10:11:16
+tags:
 categories: SLAM
 mathjax: true
 ---
