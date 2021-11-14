@@ -105,3 +105,8 @@ deploy:
   type: git
   repo: git@github.com:vitalemonate/vitalemonate.github.io.git
   branch: main
+
+math:
+  engine: 'mathjax'
+  mathjax:
+    src: https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML
