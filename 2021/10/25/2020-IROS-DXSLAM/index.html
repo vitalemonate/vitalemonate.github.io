@@ -88,7 +88,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -249,7 +251,8 @@
 </ul>
 <p>效果：</p>
 <ul>
-<li>实验结果表明本文提出的各个模块性能比baseline高很多，并且整个系统的轨迹误差也更低<span id="more"></span></li>
+<li>实验结果表明本文提出的各个模块性能比baseline高很多，并且整个系统的轨迹误差也更低<span id="more"></span>
+</li>
 </ul>
 <h1 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h1><h2 id="特征提取"><a href="#特征提取" class="headerlink" title="特征提取"></a>特征提取</h2><p>特征提取使用的是<strong>HF-Net</strong>，HF-Net的架构如下</p>
 <div align="center">
@@ -257,29 +260,30 @@
 </div>
 作者在论文中提到
 
-<blockquote>
-<p> This design choice is not only driven by <strong>functionalities</strong>,but also experimental results showing that the features from <strong>HF-Net are superior</strong> than those from alternative deep CNN feature extractors for the SLAM system.</p>
-</blockquote>
-<p>也就是说使用HF-Net并不仅仅是<strong>受其功能驱动</strong>，而且还因为在SLAM系统中使用HF-Net，<strong>会有比其他CNN更好的表现</strong>。这里提到HF-Net的功能应该指的是同时提取图像特征、局部描述子以及全局描述子的能力，而性能在后文的实验中有对比。</p>
-<p>作者使用intel的<strong>OpenVINO</strong>对HF-Net的预训练模型进行优化，在x86 CPU上重新实现了模型的推理，整个模型中只有<strong>双线性插值不能通过OpenVINO优化</strong>，所以将其移到OpenVINO推理之后的<strong>后处理阶段</strong>。</p>
-<h2 id="训练词袋"><a href="#训练词袋" class="headerlink" title="训练词袋"></a>训练词袋</h2><p>在<strong>OpenLORIS-Scene</strong>数据集上使用<strong>增量式</strong>的方法来训练词袋，具体流程如下：</p>
-<ul>
-<li><p>首先对每张图像使用HF-Net提取keypoint和对应的local descriptor</p>
-</li>
-<li><p>对每个pair的相邻帧，使用暴力匹配的方法进行匹配，将匹配的点对划分到<strong>已有的同一个叶子结点</strong>中，不匹配的feature<strong>增加一个新的结点</strong>。其中每个结点按照keypoint的得分<strong>最多保留前300个</strong></p>
-</li>
-<li><p>使用FBoW来构建词袋，训练的词袋是二进制的，可以加快ORB-SLAM2系统初始化时加载词袋的速度(<strong>6s -&gt; 40ms</strong>)</p>
-</li>
-</ul>
-<h2 id="使用global-descriptor进行重定位"><a href="#使用global-descriptor进行重定位" class="headerlink" title="使用global descriptor进行重定位"></a>使用global descriptor进行重定位</h2><p>这里涉及到获得图像global descriptor的两种方法：</p>
-<ul>
-<li><p>一种是基于BoW的方法，比如ORB-SLAM2在重定位时<strong>聚合local descriptor</strong>，计算词袋向量作为对当前帧的global descriptor</p>
-</li>
-<li><p>另外一种是基于CNN的端到端地计算图像的global descriptor</p>
-</li>
-</ul>
-<p>作者在论文中提到，基于CNN的global descriptor的图像检索<strong>已被广泛证明</strong>，与BoW方法相比，它<strong>对环境和视角变化的鲁棒性要强得多</strong>，所以作者使用HF-Net推理得到的<strong>global descriptor在关键帧数据库中寻找候选帧</strong>，然后使用<strong>PnP+RANSAC</strong>的标准方法在候选帧中筛析匹配点对并计算位姿</p>
-<h2 id="使用local-descriptor以及global-descriptor进行闭环检测"><a href="#使用local-descriptor以及global-descriptor进行闭环检测" class="headerlink" title="使用local descriptor以及global descriptor进行闭环检测"></a>使用local descriptor以及global descriptor进行闭环检测</h2><h2 id="闭环检测和重定位的区别"><a href="#闭环检测和重定位的区别" class="headerlink" title="闭环检测和重定位的区别"></a>闭环检测和重定位的区别</h2><p>由于错误的闭环检测(也就是FP)会给SLAM系统带来毁灭性的影响，所以闭环检测希望precision更高，而后者希望recall更高，Precision和Recall的定义如下</p>
+>  This design choice is not only driven by **functionalities**,but also experimental results showing that the features from **HF-Net are superior** than those from alternative deep CNN feature extractors for the SLAM system.
+
+也就是说使用HF-Net并不仅仅是**受其功能驱动**，而且还因为在SLAM系统中使用HF-Net，**会有比其他CNN更好的表现**。这里提到HF-Net的功能应该指的是同时提取图像特征、局部描述子以及全局描述子的能力，而性能在后文的实验中有对比。
+
+作者使用intel的**OpenVINO**对HF-Net的预训练模型进行优化，在x86 CPU上重新实现了模型的推理，整个模型中只有**双线性插值不能通过OpenVINO优化**，所以将其移到OpenVINO推理之后的**后处理阶段**。
+
+## 训练词袋
+在**OpenLORIS-Scene**数据集上使用**增量式**的方法来训练词袋，具体流程如下：
+* 首先对每张图像使用HF-Net提取keypoint和对应的local descriptor
+
+* 对每个pair的相邻帧，使用暴力匹配的方法进行匹配，将匹配的点对划分到**已有的同一个叶子结点**中，不匹配的feature**增加一个新的结点**。其中每个结点按照keypoint的得分**最多保留前300个**
+* 使用FBoW来构建词袋，训练的词袋是二进制的，可以加快ORB-SLAM2系统初始化时加载词袋的速度(**6s -> 40ms**)
+
+## 使用global descriptor进行重定位
+这里涉及到获得图像global descriptor的两种方法：
+* 一种是基于BoW的方法，比如ORB-SLAM2在重定位时**聚合local descriptor**，计算词袋向量作为对当前帧的global descriptor
+
+* 另外一种是基于CNN的端到端地计算图像的global descriptor
+
+作者在论文中提到，基于CNN的global descriptor的图像检索**已被广泛证明**，与BoW方法相比，它**对环境和视角变化的鲁棒性要强得多**，所以作者使用HF-Net推理得到的**global descriptor在关键帧数据库中寻找候选帧**，然后使用**PnP+RANSAC**的标准方法在候选帧中筛析匹配点对并计算位姿
+
+## 使用local descriptor以及global descriptor进行闭环检测
+## 闭环检测和重定位的区别
+由于错误的闭环检测(也就是FP)会给SLAM系统带来毁灭性的影响，所以闭环检测希望precision更高，而后者希望recall更高，Precision和Recall的定义如下
 <div align="center">
 <img src="/all_images/2020 IROS DXSLAM/3.png">
 </div>
@@ -301,7 +305,10 @@
 <li><p>下图的结果中的<strong>黑点</strong>代表一个<strong>序列</strong>（一个场景下有多个序列）的开始，<strong>蓝点和蓝线</strong>分别代表系统<strong>初始化以及tracking</strong>，每个场景左下角的百分比代表算法的<strong>average correct rate</strong>，值越大代表系统越鲁棒，右下角的浮点数代表<strong>average ATE RMSE</strong>，值越小代表系统精度越高。其中衡量算法鲁棒性的指标定义如下</p>
 <div align="center">
 <img src="/all_images/2020 IROS DXSLAM/6.png">
-</div></li>
+</div>
+
+
+</li>
 </ul>
 <ul>
 <li>DS-SLAM是在ORB-SLAM2的基础上移除了动态物体的影响</li>
@@ -336,7 +343,9 @@
 <li><p>评估重定位的指标如下</p>
 <div align="center">
 <img src="/all_images/2020 IROS DXSLAM/7.png">
-</div></li>
+</div>
+
+</li>
 </ul>
 <p>实验结果如下</p>
 <div align="center">
@@ -523,7 +532,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">具体实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E6%8F%90%E5%8F%96"><span class="nav-number">2.1.</span> <span class="nav-text">特征提取</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E8%AF%8D%E8%A2%8B"><span class="nav-number">2.2.</span> <span class="nav-text">训练词袋</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8global-descriptor%E8%BF%9B%E8%A1%8C%E9%87%8D%E5%AE%9A%E4%BD%8D"><span class="nav-number">2.3.</span> <span class="nav-text">使用global descriptor进行重定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8local-descriptor%E4%BB%A5%E5%8F%8Aglobal-descriptor%E8%BF%9B%E8%A1%8C%E9%97%AD%E7%8E%AF%E6%A3%80%E6%B5%8B"><span class="nav-number">2.4.</span> <span class="nav-text">使用local descriptor以及global descriptor进行闭环检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AD%E7%8E%AF%E6%A3%80%E6%B5%8B%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">2.5.</span> <span class="nav-text">闭环检测和重定位的区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DXSLAM%E7%9A%84%E9%97%AD%E7%8E%AF%E6%A3%80%E6%B5%8B%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.6.</span> <span class="nav-text">DXSLAM的闭环检测的实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0"><span class="nav-number">3.</span> <span class="nav-text">评估</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">3.1.</span> <span class="nav-text">数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Feature-Evaluation"><span class="nav-number">3.2.</span> <span class="nav-text">Feature Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Re-localization-Evaluation"><span class="nav-number">3.3.</span> <span class="nav-text">Re-localization Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Loop-Closure-Detection-Evaluation"><span class="nav-number">3.4.</span> <span class="nav-text">Loop Closure Detection Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Full-System-Evaluation"><span class="nav-number">3.5.</span> <span class="nav-text">Full System Evaluation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Test-on-OpenLORIS-Scene"><span class="nav-number">3.5.1.</span> <span class="nav-text">Test on OpenLORIS-Scene</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Test-on-TUM-RGB-D"><span class="nav-number">3.5.2.</span> <span class="nav-text">Test on TUM RGB-D</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Runtime-Performance"><span class="nav-number">3.6.</span> <span class="nav-text">Runtime Performance</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%AA%E6%9D%A5%E6%96%B9%E5%90%91"><span class="nav-number">4.</span> <span class="nav-text">未来方向</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Related-work"><span class="nav-number">5.</span> <span class="nav-text">Related work</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SLAM%E7%BB%BC%E8%BF%B0"><span class="nav-number">5.1.</span> <span class="nav-text">SLAM综述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Features"><span class="nav-number">5.2.</span> <span class="nav-text">Features</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Global-descriptor"><span class="nav-number">5.3.</span> <span class="nav-text">Global descriptor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Features-Global-descriptor"><span class="nav-number">5.4.</span> <span class="nav-text">Features + Global descriptor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Dataset"><span class="nav-number">5.5.</span> <span class="nav-text">Dataset</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">具体实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E6%8F%90%E5%8F%96"><span class="nav-number">2.1.</span> <span class="nav-text">特征提取</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DXSLAM%E7%9A%84%E9%97%AD%E7%8E%AF%E6%A3%80%E6%B5%8B%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.2.</span> <span class="nav-text">DXSLAM的闭环检测的实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0"><span class="nav-number">3.</span> <span class="nav-text">评估</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">3.1.</span> <span class="nav-text">数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Feature-Evaluation"><span class="nav-number">3.2.</span> <span class="nav-text">Feature Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Re-localization-Evaluation"><span class="nav-number">3.3.</span> <span class="nav-text">Re-localization Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Loop-Closure-Detection-Evaluation"><span class="nav-number">3.4.</span> <span class="nav-text">Loop Closure Detection Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Full-System-Evaluation"><span class="nav-number">3.5.</span> <span class="nav-text">Full System Evaluation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Test-on-OpenLORIS-Scene"><span class="nav-number">3.5.1.</span> <span class="nav-text">Test on OpenLORIS-Scene</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Test-on-TUM-RGB-D"><span class="nav-number">3.5.2.</span> <span class="nav-text">Test on TUM RGB-D</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Runtime-Performance"><span class="nav-number">3.6.</span> <span class="nav-text">Runtime Performance</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%AA%E6%9D%A5%E6%96%B9%E5%90%91"><span class="nav-number">4.</span> <span class="nav-text">未来方向</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Related-work"><span class="nav-number">5.</span> <span class="nav-text">Related work</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SLAM%E7%BB%BC%E8%BF%B0"><span class="nav-number">5.1.</span> <span class="nav-text">SLAM综述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Features"><span class="nav-number">5.2.</span> <span class="nav-text">Features</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Global-descriptor"><span class="nav-number">5.3.</span> <span class="nav-text">Global descriptor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Features-Global-descriptor"><span class="nav-number">5.4.</span> <span class="nav-text">Features + Global descriptor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Dataset"><span class="nav-number">5.5.</span> <span class="nav-text">Dataset</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -539,7 +548,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -652,6 +661,8 @@
 
 
 
+
+  
 
   
 

@@ -92,7 +92,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -234,8 +236,7 @@
       
         <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>这篇文章是17年的提出的一个轻量级神经网络MobileNet-V1。一句话概括：MobileNetV1就是把标准卷积层换成深度可分离卷积，这种方法能用更少的参数、更少的运算，达到跟跟普通卷差不多的结果。</p>
 <span id="more"></span>
-
-<h1 id="亮点"><a href="#亮点" class="headerlink" title="亮点"></a>亮点</h1><h2 id="深度可分离卷积-Depthwise-separable-convolution"><a href="#深度可分离卷积-Depthwise-separable-convolution" class="headerlink" title="深度可分离卷积(Depthwise separable convolution)"></a>深度可分离卷积(Depthwise separable convolution)</h2><p>深度可分离卷积就是将普通卷积拆分成为一个<strong>深度卷积(Depthwise conv)<strong>和一个</strong>逐点卷积(Pointwise conv)</strong></p>
+<h1 id="亮点"><a href="#亮点" class="headerlink" title="亮点"></a>亮点</h1><h2 id="深度可分离卷积-Depthwise-separable-convolution"><a href="#深度可分离卷积-Depthwise-separable-convolution" class="headerlink" title="深度可分离卷积(Depthwise separable convolution)"></a>深度可分离卷积(Depthwise separable convolution)</h2><p>深度可分离卷积就是将普通卷积拆分成为一个<strong>深度卷积(Depthwise conv)</strong>和一个<strong>逐点卷积(Pointwise conv)</strong></p>
 <div align=center>
 <img src="/all_images/MobileNetv1/fig0.png">
 </div>
@@ -419,7 +420,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -532,6 +533,8 @@
 
 
 
+
+  
 
   
 

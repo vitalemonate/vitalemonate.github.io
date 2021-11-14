@@ -38,7 +38,7 @@
 <meta property="og:image" content="http://example.com/all_images/IMU预积分的数学理解/fig8.png">
 <meta property="og:image" content="http://example.com/all_images/IMU预积分的数学理解/fig9.png">
 <meta property="og:image" content="http://example.com/all_images/IMU预积分的数学理解/fig10.png">
-<meta property="og:image" content="http://example.com/all_images/IMU%E9%A2%84%E7%A7%AF%E5%88%86%E7%9A%84%E6%95%B0%E5%AD%A6%E7%90%86%E8%A7%A3/fig11.png">
+<meta property="og:image" content="http://example.com/all_images/IMU预积分的数学理解/fig11.png">
 <meta property="og:image" content="http://example.com/all_images/IMU预积分的数学理解/fig12.png">
 <meta property="og:image" content="http://example.com/all_images/IMU预积分的数学理解/fig13.png">
 <meta property="og:image" content="http://example.com/all_images/IMU预积分的数学理解/fig14.png">
@@ -94,7 +94,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -236,9 +238,12 @@
       
         <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文档是学习<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1512.02363.pdf">On-Manifold Preintegration for Real-Time Visual-Inertial Odometry</a>过程中，自己对IMU预积分以及VIO残差构造的数学理解</p>
 <span id="more"></span>
-
-<h2 id="状态变量"><a href="#状态变量" class="headerlink" title="状态变量"></a>状态变量</h2><p>  定义i时刻的系统状态变量为<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig0.png"><br>  </div></p>
-<h2 id="IMU测量模型"><a href="#IMU测量模型" class="headerlink" title="IMU测量模型"></a>IMU测量模型</h2><p>  IMU的测量值受加性白噪声以及缓慢变化的bias影响。下图中的前缀为对应的坐标系<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig1.png"><br>  </div></p>
+<h2 id="状态变量"><a href="#状态变量" class="headerlink" title="状态变量"></a>状态变量</h2><p>  定义i时刻的系统状态变量为<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig0.png">
+  </div></p>
+<h2 id="IMU测量模型"><a href="#IMU测量模型" class="headerlink" title="IMU测量模型"></a>IMU测量模型</h2><p>  IMU的测量值受加性白噪声以及缓慢变化的bias影响。下图中的前缀为对应的坐标系<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig1.png">
+  </div></p>
 <h2 id="IMU预积分测量模型"><a href="#IMU预积分测量模型" class="headerlink" title="IMU预积分测量模型"></a>IMU预积分测量模型</h2><p>  对于关键帧i和j之间的预积分来说</p>
   <div align="center">
   <img src="/all_images/IMU预积分的数学理解/fig5.png">
@@ -254,26 +259,44 @@
   <img src="/all_images/IMU预积分的数学理解/fig7.png">
   </div>
 
-<h2 id="状态估计问题的数学定义"><a href="#状态估计问题的数学定义" class="headerlink" title="状态估计问题的数学定义"></a>状态估计问题的数学定义</h2><p>  我们对机器人的状态估计，就是在已知<strong>IMU预积分测量值</strong>的条件下，计算<strong>状态变量</strong>的<strong>条件概率分布</strong>，由贝叶斯法则得<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig3.png"><br>  </div></p>
-<p>  等式左侧通常称为后验概率，右侧为似然与先验的乘积。使用<strong>后验概率最大化</strong>(Maximize a Posterior, MAP)的方法对状态进行最优估计的结果为<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig4.png"><br>  </div></p>
+<h2 id="状态估计问题的数学定义"><a href="#状态估计问题的数学定义" class="headerlink" title="状态估计问题的数学定义"></a>状态估计问题的数学定义</h2><p>  我们对机器人的状态估计，就是在已知<strong>IMU预积分测量值</strong>的条件下，计算<strong>状态变量</strong>的<strong>条件概率分布</strong>，由贝叶斯法则得<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig3.png">
+  </div></p>
+<p>  等式左侧通常称为后验概率，右侧为似然与先验的乘积。使用<strong>后验概率最大化</strong>(Maximize a Posterior, MAP)的方法对状态进行最优估计的结果为<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig4.png">
+  </div></p>
 <p>  在先验信息已知且不变的情况下，我们只需要让似然概率最大即可, 我们再写出IMU预积分测量模型</p>
   <div align="center">
   <img src="/all_images/IMU预积分的数学理解/fig5.png">
   </div>
 
-<p>  我们已知IMU预积分的噪声传播方程为<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig8.png"><br>  </div></p>
-<p>  其对应的协方差矩阵为<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig9.png"><br>  </div></p>
-<p>  所以观测数据的条件概率为<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig10.png"><br>  </div></p>
-<p>  它依然是一个高斯分布，为了计算使它最大化的x_i与x_j，我们往往使用最小化负对数的方式，来求一个高斯分布的最大似然。对于一个任意的高维高斯分布<img src="/all_images/IMU%E9%A2%84%E7%A7%AF%E5%88%86%E7%9A%84%E6%95%B0%E5%AD%A6%E7%90%86%E8%A7%A3/fig11.png"></p>
+<p>  我们已知IMU预积分的噪声传播方程为<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig8.png">
+  </div></p>
+<p>  其对应的协方差矩阵为<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig9.png">
+  </div></p>
+<p>  所以观测数据的条件概率为<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig10.png">
+  </div></p>
+<p>  它依然是一个高斯分布，为了计算使它最大化的x_i与x_j，我们往往使用最小化负对数的方式，来求一个高斯分布的最大似然。对于一个任意的高维高斯分布<img src="/all_images/IMU预积分的数学理解/fig11.png" alt=""></p>
 <p>  其概率密度函数的展开形式为</p>
   <div align="center">
   <img src="/all_images/IMU预积分的数学理解/fig12.png">
   </div>
 
-<p>  取负对数为<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig13.png"><br>  </div></p>
-<p>  第一项与状态无关，可以略去，于是只要最小化右侧的二次型即可得到对状态的最大似然估计。代入IMU预积分的测量模型得<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig14.png"><br>  </div></p>
-<p>  该式等价于最小化噪声项的平方（Sigma范数意义下），定义残差项为<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig15.png"><br>  </div></p>
-<p>  其具体的表达式为<br>  <div align="center"><br>  <img src="/all_images/IMU预积分的数学理解/fig16.png"><br>  </div></p>
+<p>  取负对数为<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig13.png">
+  </div></p>
+<p>  第一项与状态无关，可以略去，于是只要最小化右侧的二次型即可得到对状态的最大似然估计。代入IMU预积分的测量模型得<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig14.png">
+  </div></p>
+<p>  该式等价于最小化噪声项的平方（Sigma范数意义下），定义残差项为<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig15.png">
+  </div></p>
+<p>  其具体的表达式为<br>  <div align="center">
+  <img src="/all_images/IMU预积分的数学理解/fig16.png">
+  </div></p>
 <h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
 <li><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1512.02363.pdf">VIO预积分经典文章</a></p>
 </li>
@@ -376,7 +399,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -489,6 +512,8 @@
 
 
 
+
+  
 
   
 

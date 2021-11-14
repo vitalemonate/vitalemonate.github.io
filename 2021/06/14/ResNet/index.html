@@ -84,7 +84,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -233,13 +235,15 @@
 解决方法：论文中提出的残差结构
 <span id="more"></span>
 
-<h1 id="亮点"><a href="#亮点" class="headerlink" title="亮点"></a>亮点</h1><ul>
-<li>超深的网络结构（突破1000层）</li>
-<li>提出residual模块</li>
-<li>使用BN加速训练(丢弃Dropout)</li>
-</ul>
-<h1 id="动机"><a href="#动机" class="headerlink" title="动机"></a>动机</h1><p>假设现有一个比较浅的网络（Shallow Net）已达到了饱和的准确率，这时在它后面再加上几个恒等映射层（Identify mapping，即 y = x，输出等于输入），这样就增加了网络的深度，并且起码误差不会增加，即更深的网络不会带来训练集上的误差上升。这里提到的 “使用恒等映射直接将前一层输出传到后面” 的思想，便是深度残差网络的灵感来源</p>
-<p>ResNet 引入残差网络结构 （residual network），通过这种残差网络结构，可以把网络层弄得很深（目前可达1000+层），并且最终的分类效果也非常好，残差网络的基本结构如图示：（该图带有跳跃结构）</p>
+# 亮点
+* 超深的网络结构（突破1000层）
+* 提出residual模块
+* 使用BN加速训练(丢弃Dropout)
+
+# 动机
+假设现有一个比较浅的网络（Shallow Net）已达到了饱和的准确率，这时在它后面再加上几个恒等映射层（Identify mapping，即 y = x，输出等于输入），这样就增加了网络的深度，并且起码误差不会增加，即更深的网络不会带来训练集上的误差上升。这里提到的 “使用恒等映射直接将前一层输出传到后面” 的思想，便是深度残差网络的灵感来源
+
+ResNet 引入残差网络结构 （residual network），通过这种残差网络结构，可以把网络层弄得很深（目前可达1000+层），并且最终的分类效果也非常好，残差网络的基本结构如图示：（该图带有跳跃结构）
 <div align=center>
 <img src="/all_images/ResNet/fig7.png">
 </div>
@@ -252,14 +256,13 @@
 </div>
 <br>
 
-<p>ResNet的网络架构的设计遵循了和VGG相同的思想：</p>
-<ul>
-<li><p>特征图尺寸相同的网络层，这些层产生特征图的通道数也相同</p>
-</li>
-<li><p>如果特征图尺寸减半，则增加一倍的通道数来保证每层的复杂度相同。也就是<strong>每下采样一次则卷积核的个数增加一倍</strong></p>
-</li>
-</ul>
-<p>下图为VGG-19, plain network(ResNet-34无shortcut connections)以及ResNet-34的网络结构对比</p>
+ResNet的网络架构的设计遵循了和VGG相同的思想：
+
+* 特征图尺寸相同的网络层，这些层产生特征图的通道数也相同
+
+* 如果特征图尺寸减半，则增加一倍的通道数来保证每层的复杂度相同。也就是**每下采样一次则卷积核的个数增加一倍**
+
+下图为VGG-19, plain network(ResNet-34无shortcut connections)以及ResNet-34的网络结构对比
 <div align=center>
 <img src="/all_images/ResNet/fig3.png">
 </div>
@@ -282,7 +285,9 @@
 </div>
 左图是不同深度的plain network的训练误差以及验证误差，右图是不同深度的ResNet的训练误差以及验证误差，可以看出作者提出的这种残差结构确实可以解决网络深度增加时产生的退化现象
 
-<h2 id="效果好"><a href="#效果好" class="headerlink" title="效果好"></a>效果好</h2><div align=center>
+## 效果好
+
+<div align=center>
 <img src="/all_images/ResNet/fig8.png">
 </div>
 
@@ -377,7 +382,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%B0%E6%9C%89%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">现有问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E6%B6%88%E5%A4%B1%E6%88%96%E6%A2%AF%E5%BA%A6%E7%88%86%E7%82%B8"><span class="nav-number">1.1.</span> <span class="nav-text">梯度消失或梯度爆炸</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%80%E5%8C%96%E9%97%AE%E9%A2%98"><span class="nav-number">1.2.</span> <span class="nav-text">退化问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%AE%E7%82%B9"><span class="nav-number">2.</span> <span class="nav-text">亮点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8A%A8%E6%9C%BA"><span class="nav-number">3.</span> <span class="nav-text">动机</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84"><span class="nav-number">4.</span> <span class="nav-text">网络结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E7%BB%93%E6%9E%84"><span class="nav-number">5.</span> <span class="nav-text">残差结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">6.</span> <span class="nav-text">实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E9%80%80%E5%8C%96%E7%8E%B0%E8%B1%A1"><span class="nav-number">6.1.</span> <span class="nav-text">解决退化现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%88%E6%9E%9C%E5%A5%BD"><span class="nav-number">6.2.</span> <span class="nav-text">效果好</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%B0%E6%9C%89%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">现有问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E6%B6%88%E5%A4%B1%E6%88%96%E6%A2%AF%E5%BA%A6%E7%88%86%E7%82%B8"><span class="nav-number">1.1.</span> <span class="nav-text">梯度消失或梯度爆炸</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%80%E5%8C%96%E9%97%AE%E9%A2%98"><span class="nav-number">1.2.</span> <span class="nav-text">退化问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">网络结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E7%BB%93%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">残差结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">4.</span> <span class="nav-text">实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E9%80%80%E5%8C%96%E7%8E%B0%E8%B1%A1"><span class="nav-number">4.1.</span> <span class="nav-text">解决退化现象</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -393,7 +398,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -506,6 +511,8 @@
 
 
 
+
+  
 
   
 

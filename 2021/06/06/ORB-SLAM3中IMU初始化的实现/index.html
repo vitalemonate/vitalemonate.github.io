@@ -28,7 +28,7 @@
 <meta property="og:description" content="LocalMapping流程概述">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/all_images/ORB-SLAM3中IMU初始化的实现/fig0.png">
-<meta property="og:image" content="http://example.com/all_images/ORB-SLAM3%E4%B8%ADIMU%E5%88%9D%E5%A7%8B%E5%8C%96%E7%9A%84%E5%AE%9E%E7%8E%B0/fig1.png">
+<meta property="og:image" content="http://example.com/all_images/ORB-SLAM3中IMU初始化的实现/fig1.png">
 <meta property="og:image" content="http://example.com/all_images/ORB-SLAM3中IMU初始化的实现/fig2.png">
 <meta property="og:image" content="http://example.com/all_images/ORB-SLAM3中IMU初始化的实现/fig3.png">
 <meta property="og:image" content="http://example.com/all_images/ORB-SLAM3中IMU初始化的实现/fig20.png">
@@ -102,7 +102,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -248,7 +250,7 @@
 
 <span id="more"></span>
 <h1 id="InitializeIMU"><a href="#InitializeIMU" class="headerlink" title="InitializeIMU"></a>InitializeIMU</h1><ol>
-<li>对状态变量<img src="/all_images/ORB-SLAM3%E4%B8%ADIMU%E5%88%9D%E5%A7%8B%E5%8C%96%E7%9A%84%E5%AE%9E%E7%8E%B0/fig1.png">进行初始化</li>
+<li>对状态变量<img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig1.png" alt="">进行初始化</li>
 </ol>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig2.png">
@@ -264,40 +266,50 @@
 <li><p>各个时刻的速度：用当前关键帧与上一关键帧之间IMU的位置变化量（视觉世界坐标系下的）除以两帧之间的时间</p>
 </li>
 </ul>
-<ol start="2">
-<li>进行Inertial-only MAP Estimation优化<div align="center">
+<ol>
+<li><p>进行Inertial-only MAP Estimation优化</p>
+<div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig3.png">
-</div></li>
-</ol>
+</div>
+
 <ul>
 <li><p>对应的因子图为</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig20.png">
-</div></li>
+</div>
+</li>
 <li><p>IMU误差项</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig22.png">
-</div></li>
+</div>
+</li>
 <li><p>关于先验的处理</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig21.png">
-</div></li>
+</div>
+</li>
 <li><p>先验信息的残差计算</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig23.png">
 </div>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig24.png">
-</div></li>
+</div>
+
+
+</li>
 </ul>
-<ol start="3">
-<li>应用优化后的变量</li>
+</li>
 </ol>
-  <div align="center">
-  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig4.png">
-  </div>
+<ol>
+<li><p>应用优化后的变量</p>
+<div align="center">
+<img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig4.png">
+</div>
 
 
+</li>
+</ol>
 <ul>
 <li><p>ApplyScaledRotation</p>
 <div align="center">
@@ -314,11 +326,13 @@
 <li><p>对于每个关键帧：</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig7.png">
-</div></li>
+</div>
+</li>
 <li><p>对于每个关键帧的速度以及地图点（省略齐次与非齐次坐标间的转换）：</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig8.png">
-</div></li>
+</div>
+</li>
 </ul>
 </li>
 <li><p>UpdateFrameIMU</p>
@@ -326,7 +340,8 @@
 <li><p>应用更新后的bias</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig9.png">
-</div></li>
+</div>
+</li>
 <li><p>用预积分量更新当前关键帧以及上一帧的IMU的绝对状态量（世界坐标系下的旋转，位置以及速度）</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig10.png">
@@ -335,35 +350,52 @@
 <p>这部分的推导可由预积分的定义式得到</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig11.png">
-</div></li>
+</div>
+
+</li>
 </ul>
 </li>
 </ul>
-<ol start="4">
-<li>进行FullInertialBA（对应IMU初始化的第三步Visual-Inertial MAP Estimation）并更新相关状态量</li>
-</ol>
-  <div align="center">
-  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig12.png">
-  </div>
+<ol>
+<li><p>进行FullInertialBA（对应IMU初始化的第三步Visual-Inertial MAP Estimation）并更新相关状态量</p>
+<div align="center">
+<img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig12.png">
+</div>
 
-<p>  这里的FullInertialBA优化关键帧位姿，速度，bias以及地图点的坐标，如果priorA不为0，假设各帧之间的IMU的bias相同，因此每个IMU误差项都有6个相关变量（上一帧以及当前帧的位姿，速度，还有两帧公用的bias)，此外还要单独考虑先验信息，此时对应的因子图为<br>  <div align="center"><br>  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig15.png"><br>  </div></p>
+<p>这里的FullInertialBA优化关键帧位姿，速度，bias以及地图点的坐标，如果priorA不为0，假设各帧之间的IMU的bias相同，因此每个IMU误差项都有6个相关变量（上一帧以及当前帧的位姿，速度，还有两帧公用的bias)，此外还要单独考虑先验信息，此时对应的因子图为</p>
+<div align="center">
+<img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig15.png">
+</div>
+
 <ul>
 <li><p>IMU误差项</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig13.png">
-</div></li>
+</div>
+</li>
 <li><p>先验信息</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig14.png">
-</div></li>
+</div>
+</li>
 <li><p>视觉误差项</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig16.png">
-</div></li>
+</div>
+
+</li>
 </ul>
-<h1 id="ScaleRefinement"><a href="#ScaleRefinement" class="headerlink" title="ScaleRefinement"></a>ScaleRefinement</h1><p>  从IMU初始化第25秒开始到75秒内，如果关键帧的个数少于100，那么每隔10秒进行一次ScaleRefinement，这个优化和Inertial-only MAP Estimation类似，只是优化变量只有尺度因子以及重力方向R_wg<br>  <div align="center"><br>  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig17.png"><br>  </div></p>
-<p>  对应的因子图为<br>  <div align="center"><br>  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig18.png"><br>  </div></p>
-<p>  对照代码发现在进行ScaleRefinement时使用的bias都是第一个关键帧的bias，与因子图的形式有差异<br>  <div align="center"><br>  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig19.png"><br>  </div></p>
+</li>
+</ol>
+<h1 id="ScaleRefinement"><a href="#ScaleRefinement" class="headerlink" title="ScaleRefinement"></a>ScaleRefinement</h1><p>  从IMU初始化第25秒开始到75秒内，如果关键帧的个数少于100，那么每隔10秒进行一次ScaleRefinement，这个优化和Inertial-only MAP Estimation类似，只是优化变量只有尺度因子以及重力方向R_wg<br>  <div align="center">
+  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig17.png">
+  </div></p>
+<p>  对应的因子图为<br>  <div align="center">
+  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig18.png">
+  </div></p>
+<p>  对照代码发现在进行ScaleRefinement时使用的bias都是第一个关键帧的bias，与因子图的形式有差异<br>  <div align="center">
+  <img src="/all_images/ORB-SLAM3中IMU初始化的实现/fig19.png">
+  </div></p>
 
     </div>
 
@@ -460,7 +492,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -573,6 +605,8 @@
 
 
 
+
+  
 
   
 

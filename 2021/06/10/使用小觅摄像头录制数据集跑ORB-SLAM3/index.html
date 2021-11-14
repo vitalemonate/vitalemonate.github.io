@@ -90,7 +90,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -230,26 +232,27 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文档主要记录使用小觅摄像头录制数据集跑ORB-SLAM3的流程，其中录制的数据集需要经过处理，打包成ORB-SLAM3要求的格式才可以，之前都是手动用excel来调整格式，最近写了两个Python脚本对数据进行处理，提高了工作效率，特此记录</p>
-<span id="more"></span>
-
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文档主要记录使用小觅摄像头录制数据集跑ORB-SLAM3的流程，其中录制的数据集需要经过处理，打包成ORB-SLAM3要求的格式才可以，之前都是手动用excel来调整格式，最近写了两个Python脚本对数据进行处理，提高了工作效率，特此记录<br><span id="more"></span></p>
 <h1 id="使用小觅摄像头录制数据集"><a href="#使用小觅摄像头录制数据集" class="headerlink" title="使用小觅摄像头录制数据集"></a>使用小觅摄像头录制数据集</h1><p>  运行小觅SDK目录下samples/_output/bin/dataset目录下的 record即可进行录制</p>
 <ul>
 <li><p>可以在samples/dataset/record.cc中的main函数中cam.Open(params)后添加3行代码来控制曝光值</p>
 <div align="center">
 <img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig0.png">
-</div></li>
+</div>
+</li>
 <li><p>输出为一个dataset目录，其中包括left目录以及一个motion.txt，其中left目录中存放的是图像以及图像的索引文件stream.txt，motion.txt中存放的是IMU数据</p>
 <div align="center">
 <img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig1.png">
-</div></li>
+</div>
+</li>
 <li><p>仿照EuRoC数据集的目录格式将dataset下的目录结构进行更改，并分别在cam0以及imu0目录下存入对应的脚本, 其中cam0目录下的data.csv为原steam.txt，imu0目录下的data.csv为原motion.txt</p>
 <div align="center">
 <img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig2.png">
-</div></li>
+</div>
+
+</li>
 </ul>
 <h1 id="处理图像数据"><a href="#处理图像数据" class="headerlink" title="处理图像数据"></a>处理图像数据</h1><h2 id="camera-script-py"><a href="#camera-script-py" class="headerlink" title="camera_script.py"></a>camera_script.py</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 参考</span></span><br><span class="line"><span class="comment"># https://cloud.tencent.com/developer/article/1687784</span></span><br><span class="line"><span class="comment"># https://blog.csdn.net/weixin_43245453/article/details/90084328</span></span><br><span class="line"><span class="comment"># https://blog.csdn.net/sinat_34615726/article/details/62891393</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> csv</span><br><span class="line"><span class="keyword">from</span> itertools <span class="keyword">import</span> islice</span><br><span class="line"></span><br><span class="line"><span class="comment"># 对原始时间戳进行处理并按照euroc的格式构建data.csv</span></span><br><span class="line"><span class="comment"># 注意这里的列句为&quot; timestamp&quot;而不是&quot;timestamp&quot;(无语...)</span></span><br><span class="line">original_file=pd.read_csv(<span class="string">&#x27;./data.csv&#x27;</span>,usecols=[<span class="string">&#x27; timestamp&#x27;</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 处理后的时间戳：将单位从10us转为1ns</span></span><br><span class="line">timestamp_list=original_file[<span class="string">&#x27; timestamp&#x27;</span>].values.tolist()</span><br><span class="line">timestamp_list=[<span class="built_in">int</span>(time*<span class="number">1e4</span>)  <span class="keyword">for</span> time <span class="keyword">in</span> timestamp_list]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新的图像名：&quot;时间戳.png&quot;</span></span><br><span class="line">filename_list=[<span class="built_in">str</span>(time)+<span class="string">&quot;.png&quot;</span>  <span class="keyword">for</span> time <span class="keyword">in</span> timestamp_list]</span><br><span class="line"></span><br><span class="line">processed_dict=&#123;<span class="string">&quot;#timestamp&quot;</span>: timestamp_list, <span class="string">&quot;filename&quot;</span>: filename_list&#125;</span><br><span class="line">dataframe=pd.DataFrame(processed_dict)</span><br><span class="line">dataframe.to_csv(<span class="string">&#x27;./data.csv&#x27;</span>, columns=[<span class="string">&quot;#timestamp&quot;</span>, <span class="string">&quot;filename&quot;</span>], index=<span class="literal">False</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span>*<span class="number">8</span> + <span class="string">&quot;data.csv处理完成&quot;</span> + <span class="string">&quot;-&quot;</span>*<span class="number">8</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取data目录下的图像的名称</span></span><br><span class="line">old_name_list=os.listdir(<span class="string">&quot;./data&quot;</span>)</span><br><span class="line"><span class="comment"># sort将图像按字符串顺序排序，其实应该将文件按数字排序，即去掉后缀再排序</span></span><br><span class="line"><span class="comment"># old_name_list.sort()</span></span><br><span class="line">old_name_list.sort(key = <span class="keyword">lambda</span> x: <span class="built_in">int</span>(x[:-<span class="number">4</span>])) <span class="comment">##文件名按数字排序</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取处理后的data.csv中的filename列为图像的新名称</span></span><br><span class="line">new_name_file=pd.read_csv(<span class="string">&#x27;./data.csv&#x27;</span>,usecols=[<span class="string">&#x27;filename&#x27;</span>])</span><br><span class="line">new_name_list=new_name_file[<span class="string">&#x27;filename&#x27;</span>].values.tolist()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建一个用于批量重命名的文件rename.csv，用于存放图像对应的新旧名称</span></span><br><span class="line">rename_dict=&#123;<span class="string">&quot;old_name&quot;</span>: old_name_list, <span class="string">&quot;new_name&quot;</span>: new_name_list&#125;</span><br><span class="line">dataframe=pd.DataFrame(rename_dict)</span><br><span class="line">dataframe.to_csv(<span class="string">&quot;./rename.csv&quot;</span>, columns=[<span class="string">&quot;old_name&quot;</span>, <span class="string">&quot;new_name&quot;</span>], index=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 根据rename.csv文件对data下的文件进行批量重命名</span></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;./rename.csv&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    lines = csv.reader(f)</span><br><span class="line">    <span class="comment"># 使用islice是为了跳过rename.csv中第一行标题</span></span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> islice(lines, <span class="number">1</span>, <span class="literal">None</span>):</span><br><span class="line">        os.rename(<span class="string">&quot;./data/&quot;</span>+line[<span class="number">0</span>], <span class="string">&quot;./data/&quot;</span>+line[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span>*<span class="number">8</span> + <span class="string">&quot;图像批量重命名完成&quot;</span> + <span class="string">&quot;-&quot;</span>*<span class="number">8</span>)</span><br></pre></td></tr></table></figure>
-
 <h2 id="运行脚本处理图像数据"><a href="#运行脚本处理图像数据" class="headerlink" title="运行脚本处理图像数据"></a>运行脚本处理图像数据</h2><p>在cam0目录下运行python3 camera_script.py, 这时data目录下的图像根据rename.csv的内容重命名</p>
 <div align="center">
 <img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig3.png">
@@ -267,7 +270,7 @@
 <h2 id="脚本主要步骤-1"><a href="#脚本主要步骤-1" class="headerlink" title="脚本主要步骤"></a>脚本主要步骤</h2><h3 id="处理加速度计和陀螺仪数据"><a href="#处理加速度计和陀螺仪数据" class="headerlink" title="处理加速度计和陀螺仪数据"></a>处理加速度计和陀螺仪数据</h3><ul>
 <li><p>对加速度计的各个分量乘以9.8，并将陀螺仪的各个分量乘以PI()除以180</p>
 </li>
-<li><p>将陀螺仪的值根据时间戳进行线性插值 interpolated_gyro = (next_time - cur_time)/(next_time - prev_time)*prev_gyro + (cur_time - prev_time)/(next_time - prev_time)*next_gyro，舍弃第一个以及最后一个IMU数据</p>
+<li><p>将陀螺仪的值根据时间戳进行线性插值 interpolated_gyro = (next_time - cur_time)/(next_time - prev_time)<em>prev_gyro + (cur_time - prev_time)/(next_time - prev_time)</em>next_gyro，舍弃第一个以及最后一个IMU数据</p>
 </li>
 <li><p>这样数据的结果是隔一行全为0，这些数据需要剔除掉，也可以使用excel来剔除这些数据</p>
 <ul>
@@ -316,13 +319,15 @@
 <li><p>在Examples/Monocular-Inertial目录下新建小觅摄像头的配置文件MYNT.yaml并将上一节得到的IMU以及相机参数填入MYNT.yaml</p>
 <div align="center">
 <img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig11.png">
-</div></li>
+</div>
+</li>
 <li><p>在Examples/Monocular-Inertial/下新建目录MYNT——Timestamps存放存储图像的时间戳的文件</p>
 </li>
 <li><p>根据mono_inertial_euroc.cc的main函数开头处的提示修改词袋路径，数据集路径，配置路径，地图路径以及图像时间戳文件的路径即可用小觅录制的数据集跑ORB-SLAM3</p>
 <div align="center">
 <img src="/all_images/使用小觅摄像头录制数据集跑ORB-SLAM3/fig12.png">
-</div></li>
+</div>
+</li>
 </ul>
 
     </div>
@@ -420,7 +425,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -533,6 +538,8 @@
 
 
 
+
+  
 
   
 

@@ -83,7 +83,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -232,7 +234,6 @@
 </li>
 </ul>
 <span id="more"></span>
-
 <h1 id="Scene-Flow的定义"><a href="#Scene-Flow的定义" class="headerlink" title="Scene Flow的定义"></a>Scene Flow的定义</h1><p>场景流指空间中场景运动形成的三维运动场，即3D位置坐标+3D运动向量。在已知相机内参和外参的情况下，可以将scene flow投影到相机平面得到optical flow。在camera-independent的情况下，scene flow可以用optical flow, disparity以及disparity change来定义。视差针对的是单个立体帧有效，在图像序列中，像素视差随着时间变化。视差变化数据填补了在仅使用optical flow和static disparity的scene flow的gap</p>
 <div align=center>
 <img src="/all_images/2016 CVPR DispNet/fig0.png">
@@ -285,11 +286,9 @@
 </li>
 </ul>
 <h2 id="SceneFlowNet"><a href="#SceneFlowNet" class="headerlink" title="SceneFlowNet"></a>SceneFlowNet</h2><p>将SceneFlowNet在作者提出的数据集上进行评估（没有提在哪个数据集上训练），评估结果如下（看着指标挺差）</p>
-<div align=center>
+<p><div align=center>
 <img src="/all_images/2016 CVPR DispNet/fig5.png">
-</div>
-由于SceneFlowNet在训练过程中要处理很多数据，因此一次forward的速度比较慢，大概需要0.28，是DispNet的5倍，并且还未收敛。作者期待forward速度会随着训练时间而加快
-
+</div><br>由于SceneFlowNet在训练过程中要处理很多数据，因此一次forward的速度比较慢，大概需要0.28，是DispNet的5倍，并且还未收敛。作者期待forward速度会随着训练时间而加快</p>
 <h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
 <li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/zz2230633069/article/details/92838002">Scene Flow Datasets数据集： FlyingThings3D, Driving, Monkaa</a></p>
 </li>
@@ -394,7 +393,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -507,6 +506,8 @@
 
 
 
+
+  
 
   
 

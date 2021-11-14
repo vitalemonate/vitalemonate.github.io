@@ -89,7 +89,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -244,7 +246,6 @@
 </li>
 </ul>
 <span id="more"></span>
-
 <h1 id="网络架构"><a href="#网络架构" class="headerlink" title="网络架构"></a>网络架构</h1><p>作者在论文中提出了两种结构：FlowNetSimple以及FlowNetCorr</p>
 <div align=center>
 <img src="/all_images/FlowNet1.0/fig0.png">
@@ -279,7 +280,7 @@
 </div>
 
 <ul>
-<li><p> 为了补充图像的信息，将f1通过一个1*1的卷积层后与Correlation Layer生成的feature map在通道方向进行concatenate，得到的feature map送入后续的卷积层</p>
+<li><p>为了补充图像的信息，将f1通过一个1*1的卷积层后与Correlation Layer生成的feature map在通道方向进行concatenate，得到的feature map送入后续的卷积层</p>
 </li>
 <li><p>注意到论文的架构图中对Correlation Layer进行了sqrt的操作，作者没有在文中提到这里进行sqrt的原因，在代码实现的过程中也没有看到这个操作，看到在flownet2代码的issue中作者提到了这个<a target="_blank" rel="noopener" href="https://github.com/lmb-freiburg/flownet2/issues/49#issuecomment-462037012">问题</a></p>
 </li>
@@ -471,7 +472,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -584,6 +585,8 @@
 
 
 
+
+  
 
   
 

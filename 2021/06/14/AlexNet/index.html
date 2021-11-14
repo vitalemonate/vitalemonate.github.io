@@ -87,7 +87,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -277,7 +279,7 @@
 <li>在<code>CIFAR-10</code>数据集上证明这种归一化方式的有效性：没有LRN时，test error rate为13%，有LRN，test error rate为11%</li>
 </ul>
 <h2 id="Overlapping-Pooling"><a href="#Overlapping-Pooling" class="headerlink" title="Overlapping Pooling"></a>Overlapping Pooling</h2><ul>
-<li>传统的池化过程用到的<code>kernel</code>在移动的过程中是不重合的，而本文使用<code> size = 3×3</code>，<code>strid = 2</code>的<code>kernel</code>进行池化，这种方式与<code> size = 3×3</code>，<code>strid = 3</code>的<code>kernel</code>相比，<strong>top-1</strong>和<strong>top-5</strong> 误差率分别减小了 <strong>0.4%</strong> 和 <strong>0.3%</strong></li>
+<li>传统的池化过程用到的<code>kernel</code>在移动的过程中是不重合的，而本文使用<code>size = 3×3</code>，<code>strid = 2</code>的<code>kernel</code>进行池化，这种方式与<code>size = 3×3</code>，<code>strid = 3</code>的<code>kernel</code>相比，<strong>top-1</strong>和<strong>top-5</strong> 误差率分别减小了 <strong>0.4%</strong> 和 <strong>0.3%</strong></li>
 <li>在训练过程中发现，使用<code>overlapping pooling</code>的模型更不容易过拟合</li>
 </ul>
 <h2 id="Overall-Architecture"><a href="#Overall-Architecture" class="headerlink" title="Overall Architecture"></a>Overall Architecture</h2><div align=center>
@@ -351,8 +353,7 @@
 <img src="/all_images/AlexNet/results1.png">
 </div>
 
-<br>
-
+<p><br></p>
 <div align=center>
 <img src="/all_images/AlexNet/results2.png">
 </div>
@@ -482,7 +483,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -595,6 +596,8 @@
 
 
 
+
+  
 
   
 

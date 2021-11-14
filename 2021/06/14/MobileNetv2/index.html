@@ -83,7 +83,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -228,7 +230,6 @@
 <li>Linear Bottleneck</li>
 </ul>
 <span id="more"></span>
-
 <h2 id="Inverted-residual"><a href="#Inverted-residual" class="headerlink" title="Inverted residual"></a>Inverted residual</h2><p>文中提出的Inverted residuals结构其实是Residual block与Depthwise Separable block的一种结合</p>
 <h3 id="MobileNet-V1-vs-MobileNet-V2"><a href="#MobileNet-V1-vs-MobileNet-V2" class="headerlink" title="MobileNet V1 vs MobileNet V2"></a>MobileNet V1 vs MobileNet V2</h3><div align=center>
 <img src="/all_images/MobileNetv2/fig2.png">
@@ -256,7 +257,7 @@
 <li>ResNet 先降维 (0.25倍)、卷积、再升维，而 MobileNet V2 则是 先升维 (6倍)、卷积、再降维。直观的形象上来看，ResNet 的微结构是沙漏形，而 MobileNet V2 则是纺锤形，刚好相反。因此论文作者将 MobileNet V2 的结构称为 Inverted Residual Block。这么做也是因为使用DW卷积而作的适配，<strong>希望特征提取能够在高维进行</strong></li>
 </ul>
 <h2 id="Linear-Bottleneck"><a href="#Linear-Bottleneck" class="headerlink" title="Linear Bottleneck"></a>Linear Bottleneck</h2><p>这一部分主要通过分析<strong>manifold of interest</strong>来说明ReLU会对低维特征信息造成大量的损失。</p>
-<p>下边这部分解释出自于<a target="_blank" rel="noopener" href="https://blog.csdn.net/u011974639/article/details/79199588">轻量级网络–MobileNetV2论文解读</a></p>
+<p>下边这部分解释出自于<a target="_blank" rel="noopener" href="https://blog.csdn.net/u011974639/article/details/79199588">轻量级网络—MobileNetV2论文解读</a></p>
 <p>长期以来我们认为：在神经网络中manifold of interest可以嵌入到低维子空间，通俗点说，当我们查看卷积层中所有单个d通道像素时，这些值中存在多种编码信息，而manifold of interest就位于其中。我们可以通过变换，进一步嵌入到下一个低维子空间中(例如通过1 × 1 1×11×1卷积变换维数，转换manifold of interest所在空间维度)</p>
 <div align=center>
 <img src="/all_images/MobileNetv2/fig3.png">
@@ -279,7 +280,7 @@
 </li>
 <li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/33075914">MobileNet V2 论文初读</a></p>
 </li>
-<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/u011974639/article/details/79199588">轻量级网络–MobileNetV2论文解读</a></p>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/u011974639/article/details/79199588">轻量级网络—MobileNetV2论文解读</a></p>
 </li>
 <li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/u011808673/article/details/95216694">Relu6 作用</a></p>
 </li>
@@ -382,7 +383,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -495,6 +496,8 @@
 
 
 
+
+  
 
   
 

@@ -104,7 +104,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -326,7 +328,8 @@
 <li><p>对于已经跟踪到的2D、3D特征点，在当前图像中<strong>计算特征点的描述子</strong>，其实就是更新了描述子</p>
 <div align="center">
 <img src="/all_images/2021 R-AL OV2SLAM/7.png">
-</div></li>
+</div>
+</li>
 <li><p>在图像中其他<strong>没有关键点的网格中</strong>提取特征并计算描述子。作者提供了三种提取特征的方法，分别是GFTT features (Harris corners with Shi-Tomasi method) ，detectGridFAST以及detectSingleScale</p>
 </li>
 </ul>
@@ -335,7 +338,8 @@
 <li><p>设置mask来表示不提取特征的区域：图像的边界 + 以已有特征点的位置为圆心，nmaxdist_为半径的圆，这样保证了特征点之间的间隔，实现类似非极大值抵制的功能，某一帧mask设置的情况如下</p>
 <div align="center">
 <img src="/all_images/2021 R-AL OV2SLAM/9.png">
-</div></li>
+</div>
+</li>
 <li><p>接下来只在上图所示的白色区域提取特征，<strong>最多提取特征的数量 = 总网格数 - 当前帧中已经有特征点的网格数</strong></p>
 <div align="center">
 <img src="/all_images/2021 R-AL OV2SLAM/12.png">
@@ -343,7 +347,8 @@
 
 <div align="center">
 <img src="/all_images/2021 R-AL OV2SLAM/10.png">
-</div></li>
+</div>
+</li>
 <li><p>对特征点进行亚像素级的优化</p>
 </li>
 <li><p>如果上一步提取到的特征的数量达到最多提取特征的数量的2/3或者最多提取特征的数量少于20就直接返回</p>
@@ -351,11 +356,13 @@
 <li><p>不满足上一个条件就继续提取特征，此时<strong>最多提取特征的数量 = 总网格数 - 当前帧中已经有特征点的网格数 - 第一步已经提取的特征点的数量</strong></p>
 <div align="center">
 <img src="/all_images/2021 R-AL OV2SLAM/11.png">
-</div></li>
+</div>
+</li>
 <li><p>同时将特征点之间的最小距离调小为原来的一半，此时的mask为</p>
 <div align="center">
 <img src="/all_images/2021 R-AL OV2SLAM/15.png">
-</div></li>
+</div>
+</li>
 <li><p>对新提取的特征点进行亚像素级的优化</p>
 </li>
 </ul>
@@ -369,13 +376,15 @@
 <p>修改后：</p>
   <div align="center">
   <img src="/all_images/2021 R-AL OV2SLAM/14.png">
-  </div></li>
+  </div>
+</li>
 <li><p>在mask后的图像中遍历每个网格提取FAST角点，每个网格中提取到的特征点按响应值从大到小排序，如果最大的响应值大于20，就将该点加入最终的结果</p>
 </li>
 <li><p>根据提取出来的点的数量调整FAST的阀值(当前帧不会再使用这个调整后的阀值提取特征，只会影响之后的帧)</p>
 <div align="center">
 <img src="/all_images/2021 R-AL OV2SLAM/24.png">
-</div></li>
+</div>
+</li>
 <li><p>对特征点进行亚像素级的优化</p>
 </li>
 </ul>
@@ -582,7 +591,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -695,6 +704,8 @@
 
 
 
+
+  
 
   
 

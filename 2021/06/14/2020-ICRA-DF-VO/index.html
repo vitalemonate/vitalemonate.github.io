@@ -94,7 +94,9 @@
   </style>
 </noscript>
 
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -244,7 +246,6 @@
 </ul>
 <p>p.s.:总的来说，这篇文章提出了结合深度学习与传统方法做VO的方法，十分值得学习，但是<strong>作者只提供了用于evaluate的代码，没有提供训练代码</strong>，因此学习暂时只停留在论文的学习层面</p>
 <span id="more"></span>
-
 <h1 id="基于几何的方法"><a href="#基于几何的方法" class="headerlink" title="基于几何的方法"></a>基于几何的方法</h1><h2 id="对极几何"><a href="#对极几何" class="headerlink" title="对极几何"></a>对极几何</h2><p>在已知2D-2D匹配关系的情况下，可以通过对极几何的方法求解相机的运动</p>
 <div align=center>
 <img src="/all_images/2020 ICRA DF-VO/fig0.png">
@@ -315,15 +316,19 @@
 <li><p>光度loss</p>
 <div align=center>
 <img src="/all_images/2020 ICRA DF-VO/fig9.png">
-</div></li>
+</div>
+</li>
 <li><p>depth边缘的平滑loss</p>
 <div align=center>
 <img src="/all_images/2020 ICRA DF-VO/fig10.png">
-</div></li>
+</div>
+</li>
 <li><p>逆深度一致性loss</p>
 <div align=center>
 <img src="/all_images/2020 ICRA DF-VO/fig11.png">
-</div></li>
+</div>
+
+</li>
 </ul>
 <h3 id="解决尺度一致性的方法："><a href="#解决尺度一致性的方法：" class="headerlink" title="解决尺度一致性的方法："></a>解决尺度一致性的方法：</h3><p>1.训练时用双目，测试时用单目<br>2.加入temporal geometry一致性的regularization(<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1908.10553.pdf">SC-sfmlearner</a>以及作者之前的<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1903.00112.pdf">文章</a>中提出的）</p>
 <h2 id="预测flow的网络"><a href="#预测flow的网络" class="headerlink" title="预测flow的网络"></a>预测flow的网络</h2><p>由于对于每个pair的图片，要计算正向和反向的光流，因此计算光流的网络必须要兼顾速度和精度，DF-VO中作者使用的是轻量级的光流估计网络<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1805.07036.pdf">LiteFlowNet</a>，这个网络比较精确并且有着不错的泛化能力，训练的loss如下（最新的<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2103.00933">文章</a>loss稍有不同)</p>
@@ -472,7 +477,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -585,6 +590,8 @@
 
 
 
+
+  
 
   
 
