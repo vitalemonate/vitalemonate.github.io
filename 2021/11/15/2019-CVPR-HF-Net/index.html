@@ -40,7 +40,7 @@
 <meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/10.png">
 <meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/12.png">
 <meta property="article:published_time" content="2021-11-15T11:56:57.000Z">
-<meta property="article:modified_time" content="2021-11-15T15:48:15.619Z">
+<meta property="article:modified_time" content="2021-11-15T16:02:33.013Z">
 <meta property="article:author" content="vitalemonate">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/1.png">
@@ -193,10 +193,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2021-11-15 19:56:57 / 修改时间：23:48:15" itemprop="dateCreated datePublished" datetime="2021-11-15T19:56:57+08:00">2021-11-15</time>
+              <time title="创建时间：2021-11-15 19:56:57" itemprop="dateCreated datePublished" datetime="2021-11-15T19:56:57+08:00">2021-11-15</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-11-16 00:02:33" itemprop="dateModified" datetime="2021-11-16T00:02:33+08:00">2021-11-16</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -245,7 +251,7 @@
 </div>
 
 <span id="more"></span>
-<h1 id="Hierarchical-Localization"><a href="#Hierarchical-Localization" class="headerlink" title="Hierarchical Localization"></a>Hierarchical Localization</h1><p>Hierarchical Localization是本篇文章的前序文章<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1809.01019.pdf">Leveraging Deep Visual Descriptors for Hierarchical Efficient Localization</a>提出的，整体示意图如下。主要流程为：Prior retrieval,Covisibility clustering以及Local feature matching。</p>
+<h1 id="Hierarchical-Localization"><a href="#Hierarchical-Localization" class="headerlink" title="Hierarchical Localization"></a>Hierarchical Localization</h1><p>Hierarchical Localization是本篇文章的前序文章<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1809.01019.pdf">Leveraging Deep Visual Descriptors for Hierarchical Efficient Localization</a>提出的，整体示意图如下。主要流程为：Prior retrieval, Covisibility clustering以及Local feature matching。</p>
 <div align="center">
 <img src="/all_images/2019 CVPR HF-Net/2.png">
 </div>
@@ -256,8 +262,8 @@
 <img src="/all_images/2019 CVPR HF-Net/3.png">
 </div>
 
-<h2 id="Local-matching-and-Localization"><a href="#Local-matching-and-Localization" class="headerlink" title="Local matching and Localization"></a>Local matching and Localization</h2><p>从含有较多关键帧的place进行开始遍历，首先使用局部描述子匹配place中的3D点与query image的2D关键点，这里使用的局部描述子为SIFT，匹配算法为k-d树。然后使用PnP+RANSAC的方法得到query image的6DoF位姿。如果得到一个位姿就结果算法，否则遍历下一个place。</p>
-<h1 id="HF-Net-Hierarchical-Feature-Network"><a href="#HF-Net-Hierarchical-Feature-Network" class="headerlink" title="HF-Net (Hierarchical Feature Network)"></a>HF-Net (Hierarchical Feature Network)</h1><h2 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h2><p>HF-Net的网络结构如下，作者将MobileNetv2作为backbone，decoder部分拆分成local feature和global descriptor两部分，训练时使用SuperPoint作为前者的老师网络，NetVLAD作为后者的老师网络</p>
+<h2 id="Local-matching-and-Localization"><a href="#Local-matching-and-Localization" class="headerlink" title="Local matching and Localization"></a>Local matching and Localization</h2><p>从含有较多关键帧的place开始遍历，首先使用局部描述子匹配place中的3D点与query image的2D关键点，前序文章中使用的局部描述子为SIFT，匹配算法为k-d树。然后使用PnP+RANSAC的方法得到query image的6DoF位姿。如果得到一个位姿就结果算法，否则遍历下一个place。</p>
+<h1 id="HF-Net-Hierarchical-Feature-Network"><a href="#HF-Net-Hierarchical-Feature-Network" class="headerlink" title="HF-Net (Hierarchical Feature Network)"></a>HF-Net (Hierarchical Feature Network)</h1><h2 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h2><p>HF-Net的网络结构如下，backbone为MobileNetv2，decoder部分拆分成local feature和global descriptor两部分，训练时使用SuperPoint作为前者的老师网络，NetVLAD作为后者的老师网络</p>
 <div align="center">
 <img src="/all_images/2019 CVPR HF-Net/4.png">
 </div>
@@ -276,7 +282,7 @@
 <img src="/all_images/2019 CVPR HF-Net/6.png">
 </div>
 
-<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><h2 id="Local-Features-Evaluation"><a href="#Local-Features-Evaluation" class="headerlink" title="Local Features Evaluation"></a>Local Features Evaluation</h2><p>由于global descriptor主流的方法就是NetVLAD,不需要进行选择，而目前计算local feature的方法较多，所以本小节实验的目的是给HF-Net的local feature选取一个合适的老师网络。作者在Hpatches和SfM数据集上评估了detector，发现SuperPoint在repeatability以及MLE之间提供了很好的权衡。</p>
+<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><h2 id="Local-Features-Evaluation"><a href="#Local-Features-Evaluation" class="headerlink" title="Local Features Evaluation"></a>Local Features Evaluation</h2><p>由于global descriptor主流的方法就是NetVLAD，不需要进行选择，而目前计算local feature的方法较多，所以本小节实验的目的是给HF-Net的local feature选取一个合适的老师网络。作者在Hpatches和SfM数据集上评估了detector，发现SuperPoint在repeatability以及MLE之间提供了很好的权衡。</p>
 <div align="center">
 <img src="/all_images/2019 CVPR HF-Net/7.png">
 </div>
@@ -290,7 +296,7 @@
 <ul>
 <li><p>DOAP在SfM数据集的所有指标都比SuperPoint好，但是由于DOAP是在Hpatches数据集上训练的，所以不能在Hpatches上评估</p>
 </li>
-<li><p>Harris/SuperPoint的组合性能较差，这表明基于学习的描述子需要和对应的detector搭配使用</p>
+<li><p>Harris/SuperPoint的组合性能较差，这表明<strong>基于学习的描述子需要和对应的detector搭配使用</strong></p>
 </li>
 <li><p>LF-Net和SIFT都是基于多尺度以及patch的描述子，性能不如DOAP和SuperPoint</p>
 </li>
@@ -307,7 +313,7 @@
 <li><p>对比 NV+SP 和 NV+HF，可以发现 HF-Net 的 local feature 比 SuperPoint 还略有提升，这一点比较奇怪，因为 HF-Net 本来是从 SuperPoint 蒸馏出来的，按理说性能会有小幅下降才对。对此作者的解释为由于 HF-Net 在同一网络加入了 Global Feature 的监督，使得这一部分的整个网络在更深的语义层次特征中获得了监督，从而变相提升了浅层的 Keypoint 特征</p>
 </li>
 </ul>
-<p>最终作者根据上面的实验综合考虑，HF-Net 使用的是 SuperPoint 提供 Keypoint 和 Descriptor 监督，用 NetVLAD 提供global descriptor监督。成功的例子示意图如下</p>
+<p>最终作者根据上面的实验综合考虑，HF-Net 使用的是<strong> SuperPoint 提供 Keypoint 和 Descriptor 监督，用 NetVLAD 提供global descriptor监督</strong>。成功的例子示意图如下</p>
 <div align="center">
 <img src="/all_images/2019 CVPR HF-Net/11.png">
 </div>
