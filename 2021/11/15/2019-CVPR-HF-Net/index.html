@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述本文出自ETH的自动系统实验室，主要解决的是大尺度情况下的visual localization问题。作者提出一个可以同时预测local feature和global descriptor的网络HF-Net，并将这个网络用于coarse-to-fine的分层视觉定位。核心思路为：先使用global descriptor进行全局检索，得到初步的候选位置，然后在候选中匹配local feature">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2019 CVPR HF-Net">
+<meta property="og:url" content="http://example.com/2021/11/15/2019-CVPR-HF-Net/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述本文出自ETH的自动系统实验室，主要解决的是大尺度情况下的visual localization问题。作者提出一个可以同时预测local feature和global descriptor的网络HF-Net，并将这个网络用于coarse-to-fine的分层视觉定位。核心思路为：先使用global descriptor进行全局检索，得到初步的候选位置，然后在候选中匹配local feature">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/1.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/2.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/3.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/4.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/5.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/6.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/7.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/8.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/9.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/11.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/10.png">
+<meta property="og:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/12.png">
+<meta property="article:published_time" content="2021-11-15T11:56:57.000Z">
+<meta property="article:modified_time" content="2021-11-15T15:48:15.619Z">
+<meta property="article:author" content="vitalemonate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/2019%20CVPR%20HF-Net/1.png">
+
+<link rel="canonical" href="http://example.com/2021/11/15/2019-CVPR-HF-Net/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>2019 CVPR HF-Net | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/11/15/2019-CVPR-HF-Net/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          2019 CVPR HF-Net
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-11-15 19:56:57 / 修改时间：23:48:15" itemprop="dateCreated datePublished" datetime="2021-11-15T19:56:57+08:00">2021-11-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/11/15/2019-CVPR-HF-Net/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/15/2019-CVPR-HF-Net/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1812.03506.pdf">本文</a>出自ETH的自动系统实验室，主要解决的是大尺度情况下的visual localization问题。作者提出一个可以同时预测local feature和global descriptor的网络HF-Net，并将这个网络用于coarse-to-fine的分层视觉定位。核心思路为：先使用global descriptor进行全局检索，得到初步的候选位置，然后在候选中匹配local feature得到最终的定位结果。同时作者使用多任务蒸馏的方式使整个系统可以高效地定位，适用于实时的操作。</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/1.png">
+</div>
+
+<span id="more"></span>
+<h1 id="Hierarchical-Localization"><a href="#Hierarchical-Localization" class="headerlink" title="Hierarchical Localization"></a>Hierarchical Localization</h1><p>Hierarchical Localization是本篇文章的前序文章<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1809.01019.pdf">Leveraging Deep Visual Descriptors for Hierarchical Efficient Localization</a>提出的，整体示意图如下。主要流程为：Prior retrieval,Covisibility clustering以及Local feature matching。</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/2.png">
+</div>
+
+<h2 id="Prior-retrieval"><a href="#Prior-retrieval" class="headerlink" title="Prior retrieval"></a>Prior retrieval</h2><p>在关键帧数据库中使用KNN算法找到K个最相近的关键帧。在前序文章中作者使用的global descriptor是通过NetVLAD蒸馏得到的MobileNetVLAD。</p>
+<h2 id="Covisibility-Clustering"><a href="#Covisibility-Clustering" class="headerlink" title="Covisibility Clustering"></a>Covisibility Clustering</h2><p>将Prior retrieval得到的关键帧根据共视关系进行聚类。如下图中，将(3)中的红圈和绿圈称为place，相当于共视图中的连通区域。</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/3.png">
+</div>
+
+<h2 id="Local-matching-and-Localization"><a href="#Local-matching-and-Localization" class="headerlink" title="Local matching and Localization"></a>Local matching and Localization</h2><p>从含有较多关键帧的place进行开始遍历，首先使用局部描述子匹配place中的3D点与query image的2D关键点，这里使用的局部描述子为SIFT，匹配算法为k-d树。然后使用PnP+RANSAC的方法得到query image的6DoF位姿。如果得到一个位姿就结果算法，否则遍历下一个place。</p>
+<h1 id="HF-Net-Hierarchical-Feature-Network"><a href="#HF-Net-Hierarchical-Feature-Network" class="headerlink" title="HF-Net (Hierarchical Feature Network)"></a>HF-Net (Hierarchical Feature Network)</h1><h2 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h2><p>HF-Net的网络结构如下，作者将MobileNetv2作为backbone，decoder部分拆分成local feature和global descriptor两部分，训练时使用SuperPoint作为前者的老师网络，NetVLAD作为后者的老师网络</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/4.png">
+</div>
+
+<p>同时作者在附录中给出了网络的具体结构</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/5.png">
+</div>
+
+<h2 id="训练过程"><a href="#训练过程" class="headerlink" title="训练过程"></a>训练过程</h2><p>这部分笔记摘自<a href="#参考">参考1</a>。作者首先提出训练过程中的2个主要问题：</p>
+<h3 id="问题1：Data-scarcity-数据稀缺性"><a href="#问题1：Data-scarcity-数据稀缺性" class="headerlink" title="问题1：Data scarcity (数据稀缺性)"></a>问题1：Data scarcity (数据稀缺性)</h3><p>对于特征匹配任务来说，很难获取到足够多的同时包含各种场景的全局和局部描述子，以及匹配图像之间的对应groundtruth</p>
+<h3 id="问题2：Data-augmentation-数据增强"><a href="#问题2：Data-augmentation-数据增强" class="headerlink" title="问题2：Data augmentation (数据增强)"></a>问题2：Data augmentation (数据增强)</h3><p>在 SuperPoint 训练过程中使用了大量的数据增强来使得局部特征描述子能够有较强的抗光照、模糊、噪声等等性能。但是过于重的数据增强对于局部特征学习有益的同时却可能对于全局特征的学习造成困难。</p>
+<h3 id="解决方案：Multi-task-distillation-多任务蒸馏"><a href="#解决方案：Multi-task-distillation-多任务蒸馏" class="headerlink" title="解决方案：Multi-task distillation (多任务蒸馏)"></a>解决方案：Multi-task distillation (多任务蒸馏)</h3><p>作者根据之前的一篇文章<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1705.07115.pdf">Multi-task learning using uncertainty to weigh losses for scene geometry and semantics</a>的技术，通过设计一个<strong>自动学习权重的loss</strong>，一个学生网络S可以同时学习到教师网络$t_1$、$t_2$、$t_3$的知识，而不需要手动调整权重。</p>
+<p>据此作者设计了这样的 loss 函数：</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/6.png">
+</div>
+
+<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><h2 id="Local-Features-Evaluation"><a href="#Local-Features-Evaluation" class="headerlink" title="Local Features Evaluation"></a>Local Features Evaluation</h2><p>由于global descriptor主流的方法就是NetVLAD,不需要进行选择，而目前计算local feature的方法较多，所以本小节实验的目的是给HF-Net的local feature选取一个合适的老师网络。作者在Hpatches和SfM数据集上评估了detector，发现SuperPoint在repeatability以及MLE之间提供了很好的权衡。</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/7.png">
+</div>
+
+<p>同时也评估了一些描述子，结果如下</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/8.png">
+</div>
+
+<p>得出的结论：</p>
+<ul>
+<li><p>DOAP在SfM数据集的所有指标都比SuperPoint好，但是由于DOAP是在Hpatches数据集上训练的，所以不能在Hpatches上评估</p>
+</li>
+<li><p>Harris/SuperPoint的组合性能较差，这表明基于学习的描述子需要和对应的detector搭配使用</p>
+</li>
+<li><p>LF-Net和SIFT都是基于多尺度以及patch的描述子，性能不如DOAP和SuperPoint</p>
+</li>
+</ul>
+<p>为了最终在DOAP和SuperPoint中二选一，作者做了另一组实验</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/9.png">
+</div>
+
+<p>结果表明：</p>
+<ul>
+<li><p>由于DOAP训练的数据集中没有夜晚的场景，所以在夜晚的数据集上性能下降</p>
+</li>
+<li><p>对比 NV+SP 和 NV+HF，可以发现 HF-Net 的 local feature 比 SuperPoint 还略有提升，这一点比较奇怪，因为 HF-Net 本来是从 SuperPoint 蒸馏出来的，按理说性能会有小幅下降才对。对此作者的解释为由于 HF-Net 在同一网络加入了 Global Feature 的监督，使得这一部分的整个网络在更深的语义层次特征中获得了监督，从而变相提升了浅层的 Keypoint 特征</p>
+</li>
+</ul>
+<p>最终作者根据上面的实验综合考虑，HF-Net 使用的是 SuperPoint 提供 Keypoint 和 Descriptor 监督，用 NetVLAD 提供global descriptor监督。成功的例子示意图如下</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/11.png">
+</div>
+
+<h2 id="Training-Dataset"><a href="#Training-Dataset" class="headerlink" title="Training Dataset"></a>Training Dataset</h2><p>Google Landmarks dataset的185k张图像，主要包括大量白天的城市场景。Berkeley Deep Drive dataset的夜晚和黄昏序列，共37k张图像。</p>
+<h2 id="Large-scale-Localization"><a href="#Large-scale-Localization" class="headerlink" title="Large scale Localization"></a>Large scale Localization</h2><p>作者在2018CVPR的室外视觉定位benchmark上评估HF-Net的定位性能。评估中用到的数据集为Aachen, RobotCar以及CMU，评估结果如下</p>
+<div align="center">
+<img src="/all_images/2019 CVPR HF-Net/10.png">
+</div>
+
+<h2 id="Runtime-Evaluation"><a href="#Runtime-Evaluation" class="headerlink" title="Runtime Evaluation"></a>Runtime Evaluation</h2><div align="center">
+<img src="/all_images/2019 CVPR HF-Net/12.png">
+</div>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="http://liuxiao.org/2020/07/%e8%ae%ba%e6%96%87%e7%ac%94%e8%ae%b0%ef%bc%9afrom-coarse-to-fine-robust-hierarchical-localization-at-large-scale/">论文笔记：From Coarse to Fine: Robust Hierarchical Localization at Large Scale</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/ethz-asl/hfnet">github源码</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/11/14/2021-R-AL-BAD-HashSIFT/" rel="prev" title="2021 R-AL Revisiting Binary Local Image Description for Resource Limited Devices">
+      <i class="fa fa-chevron-left"></i> 2021 R-AL Revisiting Binary Local Image Description for Resource Limited Devices
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Hierarchical-Localization"><span class="nav-number">2.</span> <span class="nav-text">Hierarchical Localization</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Prior-retrieval"><span class="nav-number">2.1.</span> <span class="nav-text">Prior retrieval</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Covisibility-Clustering"><span class="nav-number">2.2.</span> <span class="nav-text">Covisibility Clustering</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Local-matching-and-Localization"><span class="nav-number">2.3.</span> <span class="nav-text">Local matching and Localization</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HF-Net-Hierarchical-Feature-Network"><span class="nav-number">3.</span> <span class="nav-text">HF-Net (Hierarchical Feature Network)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">网络结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E8%BF%87%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">训练过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%981%EF%BC%9AData-scarcity-%E6%95%B0%E6%8D%AE%E7%A8%80%E7%BC%BA%E6%80%A7"><span class="nav-number">3.2.1.</span> <span class="nav-text">问题1：Data scarcity (数据稀缺性)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%982%EF%BC%9AData-augmentation-%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA"><span class="nav-number">3.2.2.</span> <span class="nav-text">问题2：Data augmentation (数据增强)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%EF%BC%9AMulti-task-distillation-%E5%A4%9A%E4%BB%BB%E5%8A%A1%E8%92%B8%E9%A6%8F"><span class="nav-number">3.2.3.</span> <span class="nav-text">解决方案：Multi-task distillation (多任务蒸馏)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">4.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Local-Features-Evaluation"><span class="nav-number">4.1.</span> <span class="nav-text">Local Features Evaluation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Training-Dataset"><span class="nav-number">4.2.</span> <span class="nav-text">Training Dataset</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Large-scale-Localization"><span class="nav-number">4.3.</span> <span class="nav-text">Large scale Localization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Runtime-Evaluation"><span class="nav-number">4.4.</span> <span class="nav-text">Runtime Evaluation</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas don't come out of thin air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">30</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/vitalemonate" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;vitalemonate" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/952070377@qq.com" title="E-Mail → 952070377@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'WXYIx5XRBQI0dHgsV4ppd4xj-MdYXbMMI',
+      appKey     : 'xufQBscNKTzWCqkruodkqjSd',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
