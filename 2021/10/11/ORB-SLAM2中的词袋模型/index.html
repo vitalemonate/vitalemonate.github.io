@@ -34,7 +34,7 @@
 <meta property="og:image" content="http://example.com/all_images/ORB-SLAM2中的词袋模型/3.png">
 <meta property="og:image" content="http://example.com/all_images/ORB-SLAM2中的词袋模型/4.png">
 <meta property="article:published_time" content="2021-10-11T13:36:42.000Z">
-<meta property="article:modified_time" content="2021-10-15T05:07:32.594Z">
+<meta property="article:modified_time" content="2021-11-16T05:22:23.098Z">
 <meta property="article:author" content="vitalemonate">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/all_images/ORB-SLAM2中的词袋模型/1.png">
@@ -195,7 +195,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-10-15 13:07:32" itemprop="dateModified" datetime="2021-10-15T13:07:32+08:00">2021-10-15</time>
+                <time title="修改时间：2021-11-16 13:22:23" itemprop="dateModified" datetime="2021-11-16T13:22:23+08:00">2021-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -246,7 +246,7 @@
 </div>
 
 <p>在前端跟踪中的Relocalization、TrackReferenceKeyFrame以及<strong>创建关键帧</strong>时都会被调用。</p>
-<h2 id="mBowVec"><a href="#mBowVec" class="headerlink" title="mBowVec"></a>mBowVec</h2><p>mBowVec其实是一个 <strong>std::map<WordId, WordValue></strong> 。</p>
+<h2 id="mBowVec"><a href="#mBowVec" class="headerlink" title="mBowVec"></a>mBowVec</h2><p>mBowVec其实是一个std::map&lt;WordId, WordValue&gt;。</p>
 <p>WordId 和 WordValue 表示Word在所有叶子中距离最近的叶子的id 和权重，其中WordValue是累加更新的：</p>
 <div align="center">
 <img src="/all_images/ORB-SLAM2中的词袋模型/2.png">
@@ -267,7 +267,7 @@
 </div>
 
 
-<h2 id="mFeatVec"><a href="#mFeatVec" class="headerlink" title="mFeatVec"></a>mFeatVec</h2><p>mFeatVec其实是一个 <strong>std::map<NodeId, std::vector<unsigned int> &gt;</strong> 。</p>
+<h2 id="mFeatVec"><a href="#mFeatVec" class="headerlink" title="mFeatVec"></a>mFeatVec</h2><p>mFeatVec其实是一个 std::map&lt;NodeId, std::vector&lt;unsigned int&gt;&gt;。</p>
 <p>其中NodeId 并不是该叶子节点直接的父节点id，而是<strong>距离叶子节点深度为level up对应的node 的id</strong>。为什么不直接设置为父节点？因为后面搜索该Word 的匹配点的时候是在和它具有同样node id下面所有子节点中的Word 进行匹配。所以搜索范围大小是根据level up来确定的，level up 值越大，搜索范围越广，速度越慢；level up 值越小，搜索范围越小，速度越快，但能够匹配的特征就越少。在ORB-SLAM2中，设定level的大小为4，即Node Id为word向上找4级的node的id。</p>
 <p>另外 std::vector 中实际存的是NodeId下所有特征点<strong>在图像中的索引</strong>：</p>
 <div align="center">
