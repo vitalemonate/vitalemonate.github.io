@@ -33,8 +33,8 @@ categories: SLAM
 <div align="center">
 <img src="/all_images/2020 IROS DXSLAM/2.png">
 </div>
-作者在论文中提到
 
+作者在论文中提到
 >  This design choice is not only driven by **functionalities**,but also experimental results showing that the features from **HF-Net are superior** than those from alternative deep CNN feature extractors for the SLAM system.
 
 也就是说使用HF-Net并不仅仅是**受其功能驱动**，而且还因为在SLAM系统中使用HF-Net，**会有比其他CNN更好的表现**。这里提到HF-Net的功能应该指的是同时提取图像特征、局部描述子以及全局描述子的能力，而性能在后文的实验中有对比。
