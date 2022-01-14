@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述本篇文章主要整理了SVD的相关基础知识，主要内容包括SVD与特征值分解、SVD的定义与应用、齐次&#x2F;非齐次线性方程组解的情况以及SVD解线性方程组。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SVD复习笔记">
+<meta property="og:url" content="http://example.com/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述本篇文章主要整理了SVD的相关基础知识，主要内容包括SVD与特征值分解、SVD的定义与应用、齐次&#x2F;非齐次线性方程组解的情况以及SVD解线性方程组。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/1.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/3.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/2.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/4.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/5.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/6.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/8.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/9.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/10.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/11.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/12.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/7.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/13.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/14.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/15.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/16.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/17.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/18.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/19.png">
+<meta property="og:image" content="http://example.com/all_images/SVD复习笔记/20.png">
+<meta property="article:published_time" content="2022-01-13T02:59:45.000Z">
+<meta property="article:modified_time" content="2022-01-14T14:35:52.730Z">
+<meta property="article:author" content="vitalemonate">
+<meta property="article:tag" content="SVD">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/SVD复习笔记/1.png">
+
+<link rel="canonical" href="http://example.com/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>SVD复习笔记 | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          SVD复习笔记
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-01-13 10:59:45" itemprop="dateCreated datePublished" datetime="2022-01-13T10:59:45+08:00">2022-01-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-01-14 22:35:52" itemprop="dateModified" datetime="2022-01-14T22:35:52+08:00">2022-01-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本篇文章主要整理了SVD的相关基础知识，主要内容包括SVD与特征值分解、SVD的定义与应用、齐次/非齐次线性方程组解的情况以及SVD解线性方程组。<br><span id="more"></span></p>
+<h1 id="从特征值分解到SVD"><a href="#从特征值分解到SVD" class="headerlink" title="从特征值分解到SVD"></a>从特征值分解到SVD</h1><p>SVD是一种矩阵分解方法，它将一个复杂的变换分解为三个简单的基本变换：<strong>旋转、放缩、投影</strong>，是一种<strong>广义的特征值分解</strong>。先来讨论特征值分解的情况。</p>
+<h2 id="特征值分解"><a href="#特征值分解" class="headerlink" title="特征值分解"></a>特征值分解</h2><p>先考虑两种特殊的情况：线性变换矩阵为对角阵或者实对称矩阵。</p>
+<h3 id="对角阵"><a href="#对角阵" class="headerlink" title="对角阵"></a>对角阵</h3><script type="math/tex; mode=display">M=\begin{bmatrix}
+  3&0 \\
+  0&1
+\end{bmatrix}</script><p>变换的效果如下图所示，变换后的平面仅仅是沿水平方面拉伸了3倍，垂直方向并没有发生变化。</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/1.png">
+</div>
+
+<h3 id="实对称矩阵"><a href="#实对称矩阵" class="headerlink" title="实对称矩阵"></a>实对称矩阵</h3><script type="math/tex; mode=display">M=\begin{bmatrix}
+  2&1 \\
+  1&2
+\end{bmatrix}</script><p>如果对原网格进行变换，效果如下图所求，但是这样不能清楚简单地描述线性变换的几何效果，原文的话是</p>
+<blockquote>
+<p>It is not so clear how to describe simply the geometric effect of the transformation.</p>
+</blockquote>
+<div align="center">
+<img src="/all_images/SVD复习笔记/3.png">
+</div>
+
+<p>但是在实对称矩阵的情况下，我们总可以<strong>找到一组网格</strong>，使得矩阵作用在该网格上仅仅表现为拉伸变换，而<strong>没有旋转变换</strong>。写成方程的形式就是<br>\begin{align}<br>M\left [ v_1 \  v_2\right ] = \left [\sigma _1v_1 \ \sigma _2v_2\right]<br>\end{align}</p>
+<p>由$(1)$式可知，在实对称矩阵的情况下，我们要寻找的网格就是<strong>由$M$的特征向量组成的网格，拉伸的比例就是特征值的大小</strong>，在这个例子下，它是由原始网格逆时针旋转45度得到的，然后再进行矩阵$M$的线性变换，这样跟前面的对角矩阵的功能是相同的，都是将<strong>网格沿着一个方向拉伸了3倍</strong>。</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/2.png">
+</div>
+
+<p>这个几何意义背后的数学原理非常常用也非常重要，那就是<strong>实对称矩阵必可正交对角化</strong>：</p>
+<p>对于任一个$n$阶<strong>实对称矩阵</strong>$A$，存在$n$阶<strong>正交矩阵</strong>$T$，使得<br>\begin{align}<br>T^{-1}AT=diag(\lambda _1,\lambda _2,…,\lambda _n)<br>\end{align}</p>
+<h3 id="一般矩阵"><a href="#一般矩阵" class="headerlink" title="一般矩阵"></a>一般矩阵</h3><p>以$2*2$实矩阵为例</p>
+<script type="math/tex; mode=display">M=\begin{bmatrix}
+  1&1 \\
+  0&1
+\end{bmatrix}</script><p>很遗憾，由于非对称矩阵无法保证在实数域上可对角化，所以我们无法找到一组网格，使得矩阵作用在该网格上仅仅表现为拉伸变换。我们退而求其次，找一组网格，使得矩阵作用在该网格后允许有<strong>拉伸</strong>和<strong>旋转</strong>变换，但是保证变换后的<strong>网格依然相互垂直</strong>。</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/4.png">
+</div>
+
+<p>其中$u_1,u_2$为线性变换后的网格的单位向量</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/5.png">
+</div>
+
+<p>写成方程的形式为<br>\begin{align}<br>Mv_1&amp;=\sigma _1u_1\\<br>Mv_2&amp;=\sigma _2u_2<br>\end{align}</p>
+<p>其中$\sigma _1, \sigma _2$为网格的拉伸比例，将$(3)(4)$两式整理为矩阵的形式<br>\begin{align}<br>M\left [ v_1 \  v_2\right ] &amp;= \left [\sigma _1u_1 \ \sigma _2u_2\right] \\<br>M&amp;=\left[u_1 \ u_2 \right]<br>\begin{bmatrix}<br> \sigma _1&amp;0 \\<br>  0&amp;\sigma _2<br>\end{bmatrix}<br>\begin{bmatrix}<br>v_1^T \\<br>v_2^T<br>\end{bmatrix} \\<br>M&amp;=U\Sigma V^T<br>\end{align}</p>
+<p>这样就得到矩阵$M$的SVD。奇异值$\sigma _1$和$\sigma _2$分别是$Mv_1$和$Mv_1$的长度。很容易可以把结论推广到更高维的情形。</p>
+<h1 id="SVD的定义与应用"><a href="#SVD的定义与应用" class="headerlink" title="SVD的定义与应用"></a>SVD的定义与应用</h1><h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>假设$M$是一个$m×n$的矩阵，其中的元素全部属于数域$K$，如果存在$m×m$阶酉矩阵$U$和$n×n$阶酉矩阵$V$以及$m×n$阶非负实数对角矩阵$\Sigma$，使得下式成立<br>\begin{align}<br>M&amp;=U\Sigma V^T<br>\end{align}</p>
+<p>则将式$(8)$的过程称为奇异值分解，一个形象的示意图如下</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/6.png">
+</div>
+
+<h2 id="几何意义"><a href="#几何意义" class="headerlink" title="几何意义"></a>几何意义</h2><p>SVD的几何意义概括起来就是将$V$这组正交基向量的空间<strong>旋转</strong>到$U$这组正交基向量的空间，并对每个方向进行了一定的<strong>缩放</strong>(由$\Sigma $决定），缩放因子就是各个奇异值。如果$V$的维度比$U$大，则表示还进行了<strong>投影</strong>。</p>
+<h2 id="求解过程"><a href="#求解过程" class="headerlink" title="求解过程"></a>求解过程</h2><p>式$(8)$两侧同时左乘$M^T$可得<br>\begin{align}<br>M^TM&amp;=V\Sigma ^TU^TU\Sigma V^T \\<br>M^TM&amp;=V\Sigma^T\Sigma V^T<br>\end{align}</p>
+<p>也就是说$V$的列向量$v_i$是$M^TM$的特征向量，其特征值为$\sigma _i^2$，同理，$U$的列向量$u_i$是$MM^T$的特征向量，其特征值为$\sigma _i^2$。因此可以通过对$M^TM$和$MM^T$进行特征值分解得到奇异向量和奇异值。关于$M^TM$和$MM^T$拥有<strong>相同的非零特征值</strong>的证明可参考<a target="_blank" rel="noopener" href="https://blog.csdn.net/zhengjihao/article/details/70148582">这篇文章</a>。</p>
+<h2 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h2><p>奇异值$\sigma$跟特征值类似，往往对应着矩阵中隐含的重要信息，且重要性和奇异值大小正相关，在矩阵$\Sigma$中奇异值是从大到小排列，而且$\sigma$减少的特别快。在很多情况下，前10%甚至1%的奇异值的和就占了全部的奇异值之和的99%以上了。也就是说，我们也可以用<strong>前k个大的奇异值来近似描述矩阵</strong>。这里定义一下部分奇异值分解：<br>\begin{align}<br>M_{m\times n} &amp;\approx U_{m\times k}\Sigma_{k\times k} V^T_{k\times n} \\<br>\end{align}</p>
+<p>因此在图像处理以及音频处理领域，SVD经常用来进行图像或者音频的压缩。下面整理了知乎问题”奇异值的物理意义是什么？”中<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/22237507/answer/53804902">Jimbo大佬的置顶回答</a>中的非常形象的例子。下图是一张$450\times 333$的图片</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/8.png">
+</div>
+
+<p>根据奇异值分解的定义，像素矩阵$A$可以写为<br>\begin{align}<br>A=\sigma _1u_1v_1^T + \sigma _2u_2v_2^T + … + \sigma _ru_rv_r^T \\<br>\end{align}</p>
+<p>其中$r$为矩阵$A$的秩，在只保留式$(12)$右边的第一项的情况下的图像为</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/9.png">
+</div>
+
+<p>保留5项的情况下的图像为</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/10.png">
+</div>
+
+<p>保留20项时</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/11.png">
+</div>
+
+<p>虽然还有些马赛克般的模糊，但我们总算能辨别出这是Juri酱的脸，当保留50项时</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/12.png">
+</div>
+
+<p>我们得到和原图差别不大的图像。也就是说当$k$从1不断增大时，$A_k$不断的逼近$A$。这时我们可以分析一下保留50项和保留全图的数据量。如果保存全图的话，我们需要保存的数据量为$450\times 333 = 149850$，等式右边的$u$和$v$分别是$450\times 1$和$333\times 1$的列向量，每一项要保留的数据量是$450+333+1=784$，在保留前50项的情况下，我们要保留的数据量为$784\times 50= 39200$，数据量是前者的$26$%。这个例子形象地体现了SVD在数据压缩过程中的重要性。</p>
+<p>此外，SVD还可以对图像进行去噪。如果一副图像包含噪声，我们有理由相信那些较小的奇异值就是由于噪声引起的，当我们强行令这些较小的奇异值为0时，就可以去除图片中的噪声。</p>
+<h1 id="齐次-非齐次线性方程组解的情况"><a href="#齐次-非齐次线性方程组解的情况" class="headerlink" title="齐次/非齐次线性方程组解的情况"></a>齐次/非齐次线性方程组解的情况</h1><h2 id="齐次方程"><a href="#齐次方程" class="headerlink" title="齐次方程"></a>齐次方程</h2><p>齐次方程一定有一个零解，但是我们往往关心的是非零解的存在情况<br>\begin{align}<br>A_{m\times n}x&amp;=0<br>\end{align}</p>
+<ul>
+<li><p>当$m&lt;n$时，即方程的个数少于变量的个数时，则齐次线性方程组有非零解，证明见这个<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/392846847/answer/1204237423">链接</a></p>
+</li>
+<li><p>当$m=n$时，如果$rank(A)=n$，即$det(A)!=0$，则有唯一的零解，否则方程组有无数多解($rank(A)&lt;n$，即$det(A)=0$)</p>
+</li>
+<li><p>当$m&gt;n$时，无非零解，需要使用SVD来计算最小二乘解</p>
+</li>
+</ul>
+<h2 id="非齐次方程"><a href="#非齐次方程" class="headerlink" title="非齐次方程"></a>非齐次方程</h2><p>对于非齐次方程，其有解的充分必要条件是向量$b$在矩阵$A$的列空间内，这个定理的等价定理是<strong>系数矩阵$A$的秩等于增广矩阵的秩</strong>，即$rank(A)=rank(A|b)$，否则方程无解，可以通过对线性方程组进行初等变换（高斯消元法），化为最简型（阶梯形）矩阵来判断二者的秩是否相同。<br>\begin{align}<br>A_{m\times n}x&amp;=b<br>\end{align}</p>
+<p>在方程有解的情况下，又分为有无穷多解和有唯一解：</p>
+<ul>
+<li>方程有唯一解的充要条件是$rank(A)=n$，即$det(A)!=0$</li>
+<li>方程有无穷多解的充要条件是$rank(A)&lt;n$</li>
+</ul>
+<p>如果根据$m$和$n$的大小来讨论，可以分为以下几种情况</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/7.png">
+</div>
+
+<h1 id="SVD解线性方程组"><a href="#SVD解线性方程组" class="headerlink" title="SVD解线性方程组"></a>SVD解线性方程组</h1><h2 id="SVD解非齐次线性方程组"><a href="#SVD解非齐次线性方程组" class="headerlink" title="SVD解非齐次线性方程组"></a>SVD解非齐次线性方程组</h2><p>现在假定方程的系数矩阵为$A_{m\times n}$，且$m\gt n$，如果解不存在，<br>但是在某些情况下仍然需要找一个最接近$Ax=b$的解的$x$，也就是说我们希望找到一个使式$(15)$最小化的$x$<br>\begin{align}<br>\left|\left|Ax-b\right|\right|<br>\end{align}</p>
+<p>其中$||.||$为二范数，这样的$x$就称为是<strong>超定系统($m\gt n$)的最小二乘解</strong>。SVD可以方便地求解超定方程的最小二乘解。</p>
+<h3 id="满秩的情况-rank-A-n"><a href="#满秩的情况-rank-A-n" class="headerlink" title="满秩的情况($rank(A)=n$)"></a>满秩的情况($rank(A)=n$)</h3><p>由于二范数具有酉不变性(保范性)，所以可以将式$(15)$做如下展开<br>\begin{align}<br>\left|\left|Ax-b\right|\right| &amp;= \left|\left|UDV^Tx-b\right|\right| \\<br>&amp;=\left|\left|DV^Tx-U^Tb\right|\right|<br>\end{align}</p>
+<p>令$y=V^Tx, b^\prime=U^Tb$，将式$(17)$重写为<br>\begin{align}<br>\left|\left|DV^Tx-U^Tb\right|\right|&amp;= \left|\left|Dy-b^\prime\right|\right|\\<br>\end{align}</p>
+<p>问题转化为最小化式$(18)$，若$\left|\left|Dy-b^\prime\right|\right|=0$，其方程组形式如下图所示</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/13.png">
+</div>
+
+<p>易知$y_i=\frac{b^\prime}{d_i} (i=0,1,…,rank(A))$，求得$y$后可求得$x$为<br>\begin{align}<br>x=Vy<br>\end{align}</p>
+<p>整个求解过程如下</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/14.png">
+</div>
+
+<h3 id="亏秩的情况-rank-A-lt-n"><a href="#亏秩的情况-rank-A-lt-n" class="headerlink" title="亏秩的情况($rank(A)&lt;n$)"></a>亏秩的情况($rank(A)&lt;n$)</h3><div align="center">
+<img src="/all_images/SVD复习笔记/15.png">
+</div>
+
+<h2 id="伪逆"><a href="#伪逆" class="headerlink" title="伪逆"></a>伪逆</h2><h3 id="定义-1"><a href="#定义-1" class="headerlink" title="定义"></a>定义</h3><div align="center">
+<img src="/all_images/SVD复习笔记/16.png">
+</div>
+
+<h3 id="相关定理"><a href="#相关定理" class="headerlink" title="相关定理"></a>相关定理</h3><ul>
+<li><p>最小二乘解的伪逆形式</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/17.png">
+</div>
+</li>
+<li><p>正规方程解最小二乘<br>比较重要的结论是<strong>ResultA5.3</strong>，即$rank(A)=n$的情况下的$A$的伪逆的形式，并且在实际使用中，如果$n$比$m$小，那么使用伪逆比SVD的求解更高效</p>
+<div align="center">
+<img src="/all_images/SVD复习笔记/18.png">
+</div>
+<div align="center">
+<img src="/all_images/SVD复习笔记/19.png">
+</div>
+
+</li>
+</ul>
+<p>这种情况下解的形式也可以通过求导的方法得到，已知<br>\begin{align}<br>\left| \left|Ax-b \right|\right | &amp;=(Ax-b)^T(Ax-b) =x^TA^TAx-2b^TAx+b^Tb \\<br>\end{align}</p>
+<p>对上式求导并令导数为0得<br>\begin{align}<br>2A^TAx-2b^TA&amp;=0 \\<br>A^TAx&amp;=b^TA<br>\end{align}<br>当$A^TA$可逆时，即$rank(A)=n$时，$x$的解的形式为<br>\begin{align}<br>x=(A^TA)^{-1}b^TA<br>\end{align}</p>
+<p>结果与正规方程的形式相同。</p>
+<h2 id="SVD解齐次线性方程组"><a href="#SVD解齐次线性方程组" class="headerlink" title="SVD解齐次线性方程组"></a>SVD解齐次线性方程组</h2><p>与非齐次的情况相同，我们将问题转为最小化$||Ax||$的问题。我们发现如果$x$是方程组的一个解，那么对于任意一个标量$k$，$kx$也是一个解，因此一个合理的限制是寻找一个$||x||=1$的解<br>\begin{align}<br>min\left|\left|Ax\right|\right|, s.t. \left|\left|x\right|\right|=1 \\<br>\end{align}<br>即<br>\begin{align}<br>min\left|\left|Ax\right|\right|=min\left|\left|UDV^Tv\right|\right|=min\left|\left|DV^Tx\right|\right|<br>\end{align}<br>令$y=V^Tx$，由于$V$的酉不变性，$||x||=||V^Tx||=1$，所以问题转换为<br>\begin{align}<br>min\left|\left|Dy\right|\right|, s.t. \left|\left|y\right|\right|=1 \\<br>\end{align}</p>
+<p>展开以后得到</p>
+<p><div align="center">
+<img src="/all_images/SVD复习笔记/20.png">
+</div><br>由于$D$中奇异值的是从大到小排列的，因此最优解在$y=(0,0,…,1)^T$时取得，所以最优解就是$V$的<strong>最小奇异值对应的列向量</strong>，也就是<strong>$A^TA$最小的特征值对应的特征向量</strong>。</p>
+<p>还有一种使用拉格朗日乘数法的证明参考这个<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/138232238">链接</a></p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="http://www.ams.org/publicoutreach/feature-column/fcarc-svd">We Recommend a Singular Value Decomposition</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/22237507/answer/53804902">奇异值的物理意义是什么？ - Jimbo的回答 - 知乎</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/22237507/answer/801023732">奇异值的物理意义是什么？ - 阿姆斯特朗的回答 - 知乎</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/MyArrow/article/details/53780972">矩阵分解 (特征值/奇异值分解+SVD+解齐次/非齐次线性方程组)</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://jiangren.work/2019/08/17/SVD%E8%A7%A3%E8%B6%85%E5%AE%9A%E6%96%B9%E7%A8%8B/#2-%E5%A5%87%E5%BC%82%E5%80%BC%E5%88%86%E8%A7%A3%E8%A7%A3%E7%BA%BF%E6%80%A7%E6%96%B9%E7%A8%8B">SVD解超定方程</a></p>
+</li>
+<li><p><a href="">Richard Hartley and Andrew Zisserman. Multiple View Geometry in Computer Vision.</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/SVD/" rel="tag"># SVD</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/01/12/3Blue1Brown%E2%80%9C%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0%E7%9A%84%E6%9C%AC%E8%B4%A8%E2%80%9D%E7%AC%94%E8%AE%B0/" rel="prev" title="3Blue1Brown“线性代数的本质”笔记">
+      <i class="fa fa-chevron-left"></i> 3Blue1Brown“线性代数的本质”笔记
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E%E7%89%B9%E5%BE%81%E5%80%BC%E5%88%86%E8%A7%A3%E5%88%B0SVD"><span class="nav-number">2.</span> <span class="nav-text">从特征值分解到SVD</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E5%80%BC%E5%88%86%E8%A7%A3"><span class="nav-number">2.1.</span> <span class="nav-text">特征值分解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E8%A7%92%E9%98%B5"><span class="nav-number">2.1.1.</span> <span class="nav-text">对角阵</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E5%AF%B9%E7%A7%B0%E7%9F%A9%E9%98%B5"><span class="nav-number">2.1.2.</span> <span class="nav-text">实对称矩阵</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E8%88%AC%E7%9F%A9%E9%98%B5"><span class="nav-number">2.1.3.</span> <span class="nav-text">一般矩阵</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SVD%E7%9A%84%E5%AE%9A%E4%B9%89%E4%B8%8E%E5%BA%94%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">SVD的定义与应用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89"><span class="nav-number">3.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%A0%E4%BD%95%E6%84%8F%E4%B9%89"><span class="nav-number">3.2.</span> <span class="nav-text">几何意义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B1%82%E8%A7%A3%E8%BF%87%E7%A8%8B"><span class="nav-number">3.3.</span> <span class="nav-text">求解过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8"><span class="nav-number">3.4.</span> <span class="nav-text">应用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%BD%90%E6%AC%A1-%E9%9D%9E%E9%BD%90%E6%AC%A1%E7%BA%BF%E6%80%A7%E6%96%B9%E7%A8%8B%E7%BB%84%E8%A7%A3%E7%9A%84%E6%83%85%E5%86%B5"><span class="nav-number">4.</span> <span class="nav-text">齐次&#x2F;非齐次线性方程组解的情况</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%BD%90%E6%AC%A1%E6%96%B9%E7%A8%8B"><span class="nav-number">4.1.</span> <span class="nav-text">齐次方程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%9E%E9%BD%90%E6%AC%A1%E6%96%B9%E7%A8%8B"><span class="nav-number">4.2.</span> <span class="nav-text">非齐次方程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SVD%E8%A7%A3%E7%BA%BF%E6%80%A7%E6%96%B9%E7%A8%8B%E7%BB%84"><span class="nav-number">5.</span> <span class="nav-text">SVD解线性方程组</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SVD%E8%A7%A3%E9%9D%9E%E9%BD%90%E6%AC%A1%E7%BA%BF%E6%80%A7%E6%96%B9%E7%A8%8B%E7%BB%84"><span class="nav-number">5.1.</span> <span class="nav-text">SVD解非齐次线性方程组</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BB%A1%E7%A7%A9%E7%9A%84%E6%83%85%E5%86%B5-rank-A-n"><span class="nav-number">5.1.1.</span> <span class="nav-text">满秩的情况($rank(A)&#x3D;n$)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8F%E7%A7%A9%E7%9A%84%E6%83%85%E5%86%B5-rank-A-lt-n"><span class="nav-number">5.1.2.</span> <span class="nav-text">亏秩的情况($rank(A)&lt;n$)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%AA%E9%80%86"><span class="nav-number">5.2.</span> <span class="nav-text">伪逆</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89-1"><span class="nav-number">5.2.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E5%AE%9A%E7%90%86"><span class="nav-number">5.2.2.</span> <span class="nav-text">相关定理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SVD%E8%A7%A3%E9%BD%90%E6%AC%A1%E7%BA%BF%E6%80%A7%E6%96%B9%E7%A8%8B%E7%BB%84"><span class="nav-number">5.3.</span> <span class="nav-text">SVD解齐次线性方程组</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas don't come out of thin air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">33</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/vitalemonate" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;vitalemonate" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/952070377@qq.com" title="E-Mail → 952070377@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'WXYIx5XRBQI0dHgsV4ppd4xj-MdYXbMMI',
+      appKey     : 'xufQBscNKTzWCqkruodkqjSd',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
