@@ -54,8 +54,9 @@
 <meta property="og:image" content="http://example.com/all_images/对极几何/24.png">
 <meta property="og:image" content="http://example.com/all_images/对极几何/25.png">
 <meta property="og:image" content="http://example.com/all_images/对极几何/28.png">
+<meta property="og:image" content="http://example.com/all_images/对极几何/29.png">
 <meta property="article:published_time" content="2022-01-16T13:45:46.000Z">
-<meta property="article:modified_time" content="2022-01-17T15:16:08.738Z">
+<meta property="article:modified_time" content="2022-01-17T15:37:54.154Z">
 <meta property="article:author" content="vitalemonate">
 <meta property="article:tag" content="-对极几何">
 <meta name="twitter:card" content="summary">
@@ -222,7 +223,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-01-17 23:16:08" itemprop="dateModified" datetime="2022-01-17T23:16:08+08:00">2022-01-17</time>
+                <time title="修改时间：2022-01-17 23:37:54" itemprop="dateModified" datetime="2022-01-17T23:37:54+08:00">2022-01-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -454,6 +455,12 @@
 <img src="/all_images/对极几何/28.png">
 </div>
 
+<p>最终分解出来的$R,t$的组合为</p>
+<div align="center">
+<img src="/all_images/对极几何/29.png">
+</div>
+
+<p>下面贴一段ORB-SLAM2中分解本质矩阵的代码，值得注意的一点是由式$(31),(36)$可知，对$E$进行SVD分解后得到的<strong>左奇异值矩阵$U$的最后一列就是$t$</strong><br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">C++</span><br><span class="line">/**</span><br><span class="line"> * @brief 分解Essential矩阵得到R,t</span><br><span class="line"> * 分解E矩阵将得到4组解，这4组解分别为[R1,t],[R1,-t],[R2,t],[R2,-t]</span><br><span class="line"> * 参考：Multiple View Geometry in Computer Vision - Result 9.19 p259</span><br><span class="line"> * @param[in] E                 本质矩阵</span><br><span class="line"> * @param[in &amp; out] R1          旋转矩阵1</span><br><span class="line"> * @param[in &amp; out] R2          旋转矩阵2</span><br><span class="line"> * @param[in &amp; out] t           平移向量，另外一个取相反数</span><br><span class="line"> */</span><br><span class="line">void Initializer::DecomposeE(const cv::Mat &amp;E, cv::Mat &amp;R1, cv::Mat &amp;R2, cv::Mat &amp;t)</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    // 对本质矩阵进行奇异值分解</span><br><span class="line">	//准备存储对本质矩阵进行奇异值分解的结果</span><br><span class="line">    cv::Mat u,w,vt;</span><br><span class="line">	//对本质矩阵进行奇异值分解</span><br><span class="line">    cv::SVD::compute(E,w,u,vt);</span><br><span class="line"></span><br><span class="line">    // 左奇异值矩阵U的最后一列就是t，对其进行归一化</span><br><span class="line">    u.col(2).copyTo(t);</span><br><span class="line">    t=t/cv::norm(t);</span><br><span class="line"></span><br><span class="line">    // 构造一个绕Z轴旋转pi/2的旋转矩阵W，按照下式组合得到旋转矩阵 R1 = u*W*vt</span><br><span class="line">    //计算完成后要检查一下旋转矩阵行列式的数值，使其满足行列式为1的约束</span><br><span class="line">    cv::Mat W(3,3,CV_32F,cv::Scalar(0));</span><br><span class="line">    W.at&lt;float&gt;(0,1)=-1;</span><br><span class="line">    W.at&lt;float&gt;(1,0)=1;</span><br><span class="line">    W.at&lt;float&gt;(2,2)=1;</span><br><span class="line"></span><br><span class="line">	//计算</span><br><span class="line">    R1 = u*W*vt;</span><br><span class="line">	//旋转矩阵有行列式为+1的约束，所以如果算出来为负值，需要取反</span><br><span class="line">    if(cv::determinant(R1)&lt;0)</span><br><span class="line">        R1=-R1;</span><br><span class="line"></span><br><span class="line">	// 同理将矩阵W取转置来按照相同的公式计算旋转矩阵R2 = u*W.t()*vt</span><br><span class="line"></span><br><span class="line">    R2 = u*W.t()*vt;</span><br><span class="line">	//旋转矩阵有行列式为1的约束</span><br><span class="line">    if(cv::determinant(R2)&lt;0)</span><br><span class="line">        R2=-R2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="本质矩阵的求解"><a href="#本质矩阵的求解" class="headerlink" title="本质矩阵的求解"></a>本质矩阵的求解</h2><p>本质矩阵$E$具有五个自由度，因此表明我们最少可以用五对点来求解$E$。但是$E$的内在性质是一种非线性性质，在求解线性方程时会带来麻烦，因此，也可以只考虑它的尺度等<br>价性，使用八对点来估计$E$——这就是经典的八点法。八点法只利用了$E$的线性性质，因此可以在线性代数框架下求解。</p>
 <p>使用5对点法的算法论文为<a target="_blank" rel="noopener" href="https://ieeexplore.ieee.org/document/1288525">An efficient solution to the five-point relative pose problem</a>，日后有需再学。</p>
 <h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
