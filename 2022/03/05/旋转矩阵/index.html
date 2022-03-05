@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述整理旋转矩阵的常用性质">
+<meta property="og:type" content="article">
+<meta property="og:title" content="旋转矩阵">
+<meta property="og:url" content="http://example.com/2022/03/05/%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述整理旋转矩阵的常用性质">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/1.png">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/2.png">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/3.png">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/4.png">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/5.png">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/6.png">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/7.png">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/8.png">
+<meta property="og:image" content="http://example.com/all_images/旋转矩阵/9.png">
+<meta property="article:published_time" content="2022-03-05T05:46:35.000Z">
+<meta property="article:modified_time" content="2022-03-05T08:59:48.684Z">
+<meta property="article:author" content="vitalemonate">
+<meta property="article:tag" content="旋转矩阵">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/旋转矩阵/1.png">
+
+<link rel="canonical" href="http://example.com/2022/03/05/%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>旋转矩阵 | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/03/05/%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          旋转矩阵
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-03-05 13:46:35 / 修改时间：16:59:48" itemprop="dateCreated datePublished" datetime="2022-03-05T13:46:35+08:00">2022-03-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/03/05/%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/03/05/%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>整理旋转矩阵的常用性质<br><span id="more"></span></p>
+<h1 id="旋转"><a href="#旋转" class="headerlink" title="旋转"></a>旋转</h1><p>当我们谈到旋转时，我们必须明确一点：旋转的是向量还是坐标系？如果旋转的是向量，需要保持坐标轴固定来<strong>旋转向量</strong>；如果旋转的是坐标系，需要保持向量固定而<strong>旋转坐标系</strong></p>
+<h2 id="旋转向量"><a href="#旋转向量" class="headerlink" title="旋转向量"></a>旋转向量</h2><div align="center">
+<img src="/all_images/旋转矩阵/1.png">
+</div>
+
+<p>如上图所求，固定坐标系，将点$p$逆时针旋转至点$p^\prime$，二者的坐标关系如下</p>
+<script type="math/tex; mode=display">\begin{pmatrix}
+s^\prime \\
+t^\prime
+\end{pmatrix}=
+\begin{pmatrix}
+cos\theta & -sin\theta \\
+sin\theta & cos\theta
+\end{pmatrix}
+\begin{pmatrix}
+x\\
+y
+\end{pmatrix}</script><h2 id="旋转坐标系"><a href="#旋转坐标系" class="headerlink" title="旋转坐标系"></a>旋转坐标系</h2><div align="center">
+<img src="/all_images/旋转矩阵/2.png">
+</div>
+
+<p>这种情况是固定向量，将坐标系进行旋转，点$p$在新旧两个坐标系下的坐标关系如下</p>
+<script type="math/tex; mode=display">
+\begin{pmatrix}
+s \\
+t
+\end{pmatrix}=
+\begin{pmatrix}
+cos\theta & sin\theta \\
+-sin\theta & cos\theta
+\end{pmatrix}
+\begin{pmatrix}
+x\\
+y
+\end{pmatrix}</script><p>这种情况是视觉SLAM中经常使用的情况，$(x, y)$坐标系为世界坐标系，$(s, t)$为当前帧的坐标系，二者的关系就是上式中的矩阵，也就是旋转矩阵<strong>$R_{cw}$</strong>，描述了<strong>world to camera</strong>的旋转</p>
+<h1 id="旋转矩阵的性质"><a href="#旋转矩阵的性质" class="headerlink" title="旋转矩阵的性质"></a>旋转矩阵的性质</h1><h2 id="旋转矩阵与旋转向量的转换"><a href="#旋转矩阵与旋转向量的转换" class="headerlink" title="旋转矩阵与旋转向量的转换"></a>旋转矩阵与旋转向量的转换</h2><p>旋转矩阵与旋转向量的转换如下图视觉SLAM十四讲中所述，其实就是so(3)与SO(3)之间的转换。</p>
+<div align="center">
+<img src="/all_images/旋转矩阵/3.png">
+</div>
+
+<p>其中已知旋转矩阵，求旋转角和旋转轴的过程中涉及的两个性质容易被忽视：</p>
+<ul>
+<li><p>$trace(R)=1+2cos\theta $</p>
+</li>
+<li><p>$Rn=n$，即<strong>旋转轴$n$是矩阵$R$特征值$1$对应的特征向量</strong></p>
+</li>
+</ul>
+<h2 id="旋转的复合——左乘和右乘"><a href="#旋转的复合——左乘和右乘" class="headerlink" title="旋转的复合——左乘和右乘"></a>旋转的复合——左乘和右乘</h2><p>旋转矩阵左乘是相对固定坐标系进行旋转，右乘是相对当前坐标系进行旋转，具体推导可以看<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1v4411H7ez?p=9">台大机器人学之运动学——林沛群</a>以及<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/383072019">旋转矩阵 左乘 右乘 是什么？</a>，这里只记录结论。</p>
+<h3 id="左乘——相对世界坐标系旋转"><a href="#左乘——相对世界坐标系旋转" class="headerlink" title="左乘——相对世界坐标系旋转"></a>左乘——相对世界坐标系旋转</h3><p>如下图所示，三次旋转是分别是绕着<strong>固定坐标系</strong>$(\hat{X_A}, \hat{Y_A}, \hat{Z_A})$的$X$, $Y$, $Z$旋转三次得到的</p>
+<div align="center">
+<img src="/all_images/旋转矩阵/4.png">
+</div>
+
+<h3 id="右乘——相对当前坐标系旋转"><a href="#右乘——相对当前坐标系旋转" class="headerlink" title="右乘——相对当前坐标系旋转"></a>右乘——相对当前坐标系旋转</h3><p>如下图所示，三次旋转分别是绕<strong>上一次旋转后的</strong>坐标系的某个轴旋转得到的</p>
+<div align="center">
+<img src="/all_images/旋转矩阵/5.png">
+</div>
+
+<p>旋转矩阵的右乘是欧拉角经常采用的一种形式，这里需要注意<strong>绕$y$轴旋转的旋转矩阵中$-sin\theta$在左下角</strong>，与绕$X$轴与$Z$轴的形式不同</p>
+<div align="center">
+<img src="/all_images/旋转矩阵/6.png">
+</div>
+
+<h2 id="伴随性质"><a href="#伴随性质" class="headerlink" title="伴随性质"></a>伴随性质</h2><h3 id="性质一"><a href="#性质一" class="headerlink" title="性质一"></a>性质一</h3><script type="math/tex; mode=display">Rp^\wedge R^T = (Rp)^\wedge</script><p>这个性质有两种证明方法，一种是利用<strong>向量叉乘的旋转变换不变性</strong>，另一种则是硬推公式</p>
+<h4 id="方法一"><a href="#方法一" class="headerlink" title="方法一"></a>方法一</h4><p>copy from <a target="_blank" rel="noopener" href="https://fzheng.me/2017/12/10/Rvhat/">(Rv)^ = Rv^R’ 的简单证明</a></p>
+<div align="center">
+<img src="/all_images/旋转矩阵/7.png">
+</div>
+
+<h4 id="方法二"><a href="#方法二" class="headerlink" title="方法二"></a>方法二</h4><p>copy from <a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_17032807/article/details/84942548">《视觉slam十四讲》第4讲课后习题_</a></p>
+<div align="center">
+<img src="/all_images/旋转矩阵/8.png">
+</div>
+
+<h3 id="性质二"><a href="#性质二" class="headerlink" title="性质二"></a>性质二</h3><script type="math/tex; mode=display">R exp(p^\wedge )R^T = exp((Rp)^\wedge )</script><p>copy from <a target="_blank" rel="noopener" href="https://blog.csdn.net/u012348774/article/details/83652191">SLAM从入门到放弃：SLAM十四讲第四章习题</a></p>
+<div align="center">
+<img src="/all_images/旋转矩阵/9.png">
+</div>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/tangyongkang/article/details/5484636">坐标旋转变换公式的推导</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/407150749/answer/1342043076">旋转矩阵为何左乘是相对固定坐标系，右乘是相对当前坐标系？</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5/" rel="tag"># 旋转矩阵</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/02/27/%E5%90%91%E9%87%8F%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9A%84%E6%B1%82%E5%AF%BC/" rel="prev" title="向量和矩阵的求导">
+      <i class="fa fa-chevron-left"></i> 向量和矩阵的求导
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%97%8B%E8%BD%AC"><span class="nav-number">2.</span> <span class="nav-text">旋转</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%8B%E8%BD%AC%E5%90%91%E9%87%8F"><span class="nav-number">2.1.</span> <span class="nav-text">旋转向量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%8B%E8%BD%AC%E5%9D%90%E6%A0%87%E7%B3%BB"><span class="nav-number">2.2.</span> <span class="nav-text">旋转坐标系</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5%E7%9A%84%E6%80%A7%E8%B4%A8"><span class="nav-number">3.</span> <span class="nav-text">旋转矩阵的性质</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5%E4%B8%8E%E6%97%8B%E8%BD%AC%E5%90%91%E9%87%8F%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">3.1.</span> <span class="nav-text">旋转矩阵与旋转向量的转换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%8B%E8%BD%AC%E7%9A%84%E5%A4%8D%E5%90%88%E2%80%94%E2%80%94%E5%B7%A6%E4%B9%98%E5%92%8C%E5%8F%B3%E4%B9%98"><span class="nav-number">3.2.</span> <span class="nav-text">旋转的复合——左乘和右乘</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A6%E4%B9%98%E2%80%94%E2%80%94%E7%9B%B8%E5%AF%B9%E4%B8%96%E7%95%8C%E5%9D%90%E6%A0%87%E7%B3%BB%E6%97%8B%E8%BD%AC"><span class="nav-number">3.2.1.</span> <span class="nav-text">左乘——相对世界坐标系旋转</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%B3%E4%B9%98%E2%80%94%E2%80%94%E7%9B%B8%E5%AF%B9%E5%BD%93%E5%89%8D%E5%9D%90%E6%A0%87%E7%B3%BB%E6%97%8B%E8%BD%AC"><span class="nav-number">3.2.2.</span> <span class="nav-text">右乘——相对当前坐标系旋转</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%B4%E9%9A%8F%E6%80%A7%E8%B4%A8"><span class="nav-number">3.3.</span> <span class="nav-text">伴随性质</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%B4%A8%E4%B8%80"><span class="nav-number">3.3.1.</span> <span class="nav-text">性质一</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E4%B8%80"><span class="nav-number">3.3.1.1.</span> <span class="nav-text">方法一</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E4%BA%8C"><span class="nav-number">3.3.1.2.</span> <span class="nav-text">方法二</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%B4%A8%E4%BA%8C"><span class="nav-number">3.3.2.</span> <span class="nav-text">性质二</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas don't come out of thin air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">37</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/vitalemonate" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;vitalemonate" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/952070377@qq.com" title="E-Mail → 952070377@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'WXYIx5XRBQI0dHgsV4ppd4xj-MdYXbMMI',
+      appKey     : 'xufQBscNKTzWCqkruodkqjSd',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
