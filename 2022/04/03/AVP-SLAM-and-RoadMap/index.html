@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述本文主要记录学习两篇基于视觉语义地图进行定位的文章2020 IROS AVP-SLAM以及2021 ICRA RoadMap，两篇文章出自华为车BU智能驾驶产品部，一作均为天才少年秦通">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AVP-SLAM and RoadMap">
+<meta property="og:url" content="http://example.com/2022/04/03/AVP-SLAM-and-RoadMap/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述本文主要记录学习两篇基于视觉语义地图进行定位的文章2020 IROS AVP-SLAM以及2021 ICRA RoadMap，两篇文章出自华为车BU智能驾驶产品部，一作均为天才少年秦通">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/1.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/2.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/3.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/4.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/5.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/6.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/7.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/8.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/9.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/11.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/10.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/13.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/12.png">
+<meta property="og:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/14.png">
+<meta property="article:published_time" content="2022-04-03T12:25:02.000Z">
+<meta property="article:modified_time" content="2022-04-03T15:47:09.735Z">
+<meta property="article:author" content="vitalemonate">
+<meta property="article:tag" content="地图定位">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/AVP-SLAM%20and%20RoadMap/1.png">
+
+<link rel="canonical" href="http://example.com/2022/04/03/AVP-SLAM-and-RoadMap/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>AVP-SLAM and RoadMap | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/03/AVP-SLAM-and-RoadMap/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          AVP-SLAM and RoadMap
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-04-03 20:25:02 / 修改时间：23:47:09" itemprop="dateCreated datePublished" datetime="2022-04-03T20:25:02+08:00">2022-04-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/04/03/AVP-SLAM-and-RoadMap/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/04/03/AVP-SLAM-and-RoadMap/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文主要记录学习两篇基于视觉语义地图进行定位的文章<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2007.01813">2020 IROS AVP-SLAM</a>以及<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2106.02527">2021 ICRA RoadMap</a>，两篇文章出自华为车BU智能驾驶产品部，一作均为天才少年秦通<br><span id="more"></span></p>
+<h1 id="AVP-SLAM"><a href="#AVP-SLAM" class="headerlink" title="AVP-SLAM"></a>AVP-SLAM</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>这篇paper的题目为Semantic Visual Mapping and Localization for Autonomous Vehicles in the Parking Lot，可见AVP-SLAM是针对于地库中车辆自主泊车应用的</p>
+<h2 id="存在的问题"><a href="#存在的问题" class="headerlink" title="存在的问题"></a>存在的问题</h2><p>在地库中进行定位和建图存在两个主要的问题：</p>
+<ul>
+<li><p>GPS信号弱</p>
+</li>
+<li><p>在地库这种弱纹理环境中，传统的基于appearance-based maps的视觉track容易lost</p>
+</li>
+</ul>
+<h2 id="本文的方案"><a href="#本文的方案" class="headerlink" title="本文的方案"></a>本文的方案</h2><p>为了解决上面的问题，作者提出了使用语义地图进行定位的方案，语义元素为地库中常见的guide signs, parking lines以及speed bumps，这些语义feature相比于传统的appearence-based的特征来说更稳定且在光照不变性以及视角不变性方面更鲁棒。整个建图定位系统的结构如下</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/1.png">
+</div>
+
+<h3 id="语义特征"><a href="#语义特征" class="headerlink" title="语义特征"></a>语义特征</h3><p>语义特征的提取分为两个步骤</p>
+<ul>
+<li><p>将车辆前后左右共4个摄像头拍摄的数据通过IPM(inverse projective mapping)的方式投影到地面得到IPM图像</p>
+</li>
+<li><p>提取IPM图像中的语义特征，使用的网络是修改版的U-Net，训练数据为地库图像（并没有提到数据集的获取方式以及规模），语义标签有lanes, parking lines, guide signs, speed bumps, free space, obstacles和walls</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/2.png">
+</div>
+
+</li>
+</ul>
+<h3 id="建图"><a href="#建图" class="headerlink" title="建图"></a>建图</h3><p>如方案图所示，本方案在建图和定位流程中都通过IMU和轮速计得到odometry，建图时根据odometry的结果将IPM图像中提取出来的语义元素反投影到3D空间中构成局部地图（每30米维护一个local map）</p>
+<p>此外，为了解决odometry的累计漂移问题，作者对局部地图与相邻的局部地图进行ICP来完成闭环检测，如果完成闭环检测就对地图进行融合，建图以及融合的结果如下</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/3.png">
+</div>
+
+<h3 id="定位"><a href="#定位" class="headerlink" title="定位"></a>定位</h3><p>定位的核心是一个基于EKF的框架，将IMU和轮速计提供odometry的作为预测量，将视觉语义特征与已有的语义地图ICP的结果作为更新量，得到最终定位的结果。</p>
+<p>这里要注意的一点是由于ICP的结果受初值影响很大，因此作者提供了两种方法来确定ICP的初值：</p>
+<ul>
+<li><p>全局地图的入口的位置是已知的</p>
+</li>
+<li><p>将进行地库前的GPS信号作为初始值</p>
+</li>
+</ul>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><h3 id="建图评估"><a href="#建图评估" class="headerlink" title="建图评估"></a>建图评估</h3><p>在室外停车场（GPS信息良好）将AVP-SLAM中IMU和轮速的纯odometry输出与同一场景下ORB-SLAM2的输出作对比，将RTK-GPS的轨迹作为groundtruth，各项指标对比的结果如下图所示</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/4.png">
+</div>
+
+<h3 id="地库评估"><a href="#地库评估" class="headerlink" title="地库评估"></a>地库评估</h3><p>这一组实验通过对比AVP-SLAM与ORB-SLAM2重定位的召回率来评估算法的长期稳定性</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/5.png">
+</div>
+
+<p>作者在文中提到下面一段话，应该指的是ORB-SLAM2建图时用到的pose是和AVP-SLAM相同，都是由轮速计和IMU得到的odometry</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/6.png">
+</div>
+
+<p>二者重建的地图的大小分别为</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/7.png">
+</div>
+
+<h3 id="定位精度评估"><a href="#定位精度评估" class="headerlink" title="定位精度评估"></a>定位精度评估</h3><p>这组实验中作者定义的定位误差的定义为：实地测量出来的车辆中心与车位边缘的距离-地图中二者的距离<br>重复20次实验统计的定位误差如下</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/8.png">
+</div>
+
+<h1 id="RoadMap"><a href="#RoadMap" class="headerlink" title="RoadMap"></a>RoadMap</h1><p>与AVP-SLAM针对地库的场景不同，RoadMap针对的是urban场景下的轻量级语义地图的生产以及定位</p>
+<h2 id="背景-1"><a href="#背景-1" class="headerlink" title="背景"></a>背景</h2><p>背景部分的介绍来自秦通在<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/382183817">知乎上发的文章</a><br>在复杂的城区自动驾驶任务中，高精地图是一个不可或缺的要素。车辆的定位，导航，规划等每一个环节都依赖地图。</p>
+<h2 id="存在的问题-1"><a href="#存在的问题-1" class="headerlink" title="存在的问题"></a>存在的问题</h2><p>传统的高精地图生产依赖专业的地图采集车和精细的人工标注。高精地图高昂的制作成本，和漫长的制作周期，限制了其大规模的应用。事实上，目前高精地图只覆盖重点几个城市的重点区域，这也是为什么只有在特定城市的特定区域才能看到Robot-Taxi服务</p>
+<p>随着自动驾驶技术的进步，现在的量产车配备了越来越丰富的传感器。比如北汽极狐Arcfox搭载了激光雷达，数十个高分辨率摄像头和4G/5G通信模块。这些量产车每时每刻都跑在地球的每个角落。那么使用这些量产车，通过众包的途径，能不能快速得收集数据，构建自动驾驶需要得地图呢？</p>
+<h2 id="本文的方案-1"><a href="#本文的方案-1" class="headerlink" title="本文的方案"></a>本文的方案</h2><p>这篇工作就探索使用量产车传感器，通过众包的方式构建轻量化的语义地图，来取代传统的高精地图，达到低成本快速覆盖的目的。整体架构如下</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/9.png">
+</div>
+
+<p>从架构图可以清晰地看出整个算法框架分为三部分：</p>
+<ul>
+<li><p>sensor-rich cars通过采集IMU、wheel、RTK+GNSS以及camera的信息来构建局部地图并上传到云端服务器</p>
+</li>
+<li><p>云端服务器负责将不同的局部地图进行融合并完成地图的更新和制作</p>
+</li>
+<li><p>low-cost product cars从云端下载地图，完成定位</p>
+</li>
+</ul>
+<h3 id="sensor-rich-cars局部地图的构建"><a href="#sensor-rich-cars局部地图的构建" class="headerlink" title="sensor-rich cars局部地图的构建"></a>sensor-rich cars局部地图的构建</h3><p>RoadMap车端的建图与AVP-SLAM不同的地方主要有两点：</p>
+<ul>
+<li><p>RoadMap只采用了前视摄像头的图像来提取语义特征</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/11.png">
+</div>
+</li>
+<li><p>由于RoadMap主要用于urban中GPS信号良好的场景，因此可以将RTK-GNSS的信号加入位姿图的优化中，解决odometry的累积漂移问题</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/10.png">
+</div>
+
+</li>
+</ul>
+<h3 id="云端地图融合及更新"><a href="#云端地图融合及更新" class="headerlink" title="云端地图融合及更新"></a>云端地图融合及更新</h3><ul>
+<li><p>由于同一物体在不同帧中可能会被推理为不同的语义特征，作者在车端和云端融合地图时都采用了一种基于网格的得分机制来解决这个问题</p>
+</li>
+<li><p>由于product car网络传输带宽的限制，云端需要将地图中的语义特征进行轮廓提取，以轮廓的方式存储地图元素，作者在文中提到<strong>语义地图的平均大小为36kb/km</strong></p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/13.png">
+</div>
+
+</li>
+</ul>
+<h3 id="low-cost-product-cars定位"><a href="#low-cost-product-cars定位" class="headerlink" title="low-cost product cars定位"></a>low-cost product cars定位</h3><p>采用类似AVP-SLAM的EKF定位算法，用wheel以及IMU的odometry作为预测量，将语义特征反投影得到的地图与下载的全局地图进行ICP的结果作为更新量得到定位结果，但是文中并没有提到ICP的初值的设定方法</p>
+<h2 id="实验-1"><a href="#实验-1" class="headerlink" title="实验"></a>实验</h2><h3 id="地图生产"><a href="#地图生产" class="headerlink" title="地图生产"></a>地图生产</h3><p>场景更新前后的地图如下</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/12.png">
+</div>
+
+<h3 id="定位精度"><a href="#定位精度" class="headerlink" title="定位精度"></a>定位精度</h3><p>将视觉定位的结果与Lidar定位(具体定位方法没有说明)的结果作对比，将RTK-GNSS的结果作为groundtruth，对比的结果如下图所示</p>
+<div align="center">
+<img src="/all_images/AVP-SLAM and RoadMap/14.png">
+</div>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/157340737">AVP-SLAM:自主代客泊车视觉定位方案探索（自动驾驶）</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/382183817">不用高精地图行不行？RoadMap：自动驾驶轻量化视觉众包地图</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%9C%B0%E5%9B%BE%E5%AE%9A%E4%BD%8D/" rel="tag"># 地图定位</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/03/06/SLAM%E4%B8%AD%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%B3%E4%BA%8E%E6%97%8B%E8%BD%AC%E7%9A%84%E5%AF%BC%E6%95%B0/" rel="prev" title="SLAM中常见的关于旋转的导数">
+      <i class="fa fa-chevron-left"></i> SLAM中常见的关于旋转的导数
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#AVP-SLAM"><span class="nav-number">2.</span> <span class="nav-text">AVP-SLAM</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.2.</span> <span class="nav-text">存在的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AC%E6%96%87%E7%9A%84%E6%96%B9%E6%A1%88"><span class="nav-number">2.3.</span> <span class="nav-text">本文的方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E7%89%B9%E5%BE%81"><span class="nav-number">2.3.1.</span> <span class="nav-text">语义特征</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E5%9B%BE"><span class="nav-number">2.3.2.</span> <span class="nav-text">建图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%BD%8D"><span class="nav-number">2.3.3.</span> <span class="nav-text">定位</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">2.4.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E5%9B%BE%E8%AF%84%E4%BC%B0"><span class="nav-number">2.4.1.</span> <span class="nav-text">建图评估</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%B0%E5%BA%93%E8%AF%84%E4%BC%B0"><span class="nav-number">2.4.2.</span> <span class="nav-text">地库评估</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%BD%8D%E7%B2%BE%E5%BA%A6%E8%AF%84%E4%BC%B0"><span class="nav-number">2.4.3.</span> <span class="nav-text">定位精度评估</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RoadMap"><span class="nav-number">3.</span> <span class="nav-text">RoadMap</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF-1"><span class="nav-number">3.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98-1"><span class="nav-number">3.2.</span> <span class="nav-text">存在的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AC%E6%96%87%E7%9A%84%E6%96%B9%E6%A1%88-1"><span class="nav-number">3.3.</span> <span class="nav-text">本文的方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sensor-rich-cars%E5%B1%80%E9%83%A8%E5%9C%B0%E5%9B%BE%E7%9A%84%E6%9E%84%E5%BB%BA"><span class="nav-number">3.3.1.</span> <span class="nav-text">sensor-rich cars局部地图的构建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%91%E7%AB%AF%E5%9C%B0%E5%9B%BE%E8%9E%8D%E5%90%88%E5%8F%8A%E6%9B%B4%E6%96%B0"><span class="nav-number">3.3.2.</span> <span class="nav-text">云端地图融合及更新</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#low-cost-product-cars%E5%AE%9A%E4%BD%8D"><span class="nav-number">3.3.3.</span> <span class="nav-text">low-cost product cars定位</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C-1"><span class="nav-number">3.4.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%B0%E5%9B%BE%E7%94%9F%E4%BA%A7"><span class="nav-number">3.4.1.</span> <span class="nav-text">地图生产</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%BD%8D%E7%B2%BE%E5%BA%A6"><span class="nav-number">3.4.2.</span> <span class="nav-text">定位精度</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas don't come out of thin air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">39</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/vitalemonate" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;vitalemonate" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/952070377@qq.com" title="E-Mail → 952070377@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'WXYIx5XRBQI0dHgsV4ppd4xj-MdYXbMMI',
+      appKey     : 'xufQBscNKTzWCqkruodkqjSd',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
