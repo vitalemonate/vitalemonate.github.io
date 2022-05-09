@@ -160,7 +160,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/05/03/c++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -174,7 +174,96 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/05/03/c++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/" class="post-title-link" itemprop="url">c++智能指针笔记</a>
+            <a href="/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" class="post-title-link" itemprop="url">C++ CRTP设计模式</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-05-09 21:27:58 / 修改时间：23:33:30" itemprop="dateCreated datePublished" datetime="2022-05-09T21:27:58+08:00">2022-05-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index"><span itemprop="name">C++</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>之前在一次面试中被面试官问到是否了解Eigen中的CRTP设计模式，当时没有听过这个概念，看CRTP的前两个缩写是C和R，联想到Eigen进行矩阵存储时的col优先和row优先，闹了一个大笑话，不知道面试官当时听我的胡扯后是什么想法。面试结束后学习了一下CRTP设计模式，特将学习的内容总结如下<br>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/05/03/C++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/05/03/C++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/" class="post-title-link" itemprop="url">C++智能指针笔记</a>
         </h2>
 
         <div class="post-meta">
@@ -191,7 +280,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-05-09 17:20:01" itemprop="dateModified" datetime="2022-05-09T17:20:01+08:00">2022-05-09</time>
+                <time title="修改时间：2022-05-09 21:36:43" itemprop="dateModified" datetime="2022-05-09T21:36:43+08:00">2022-05-09</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -212,8 +301,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2022/05/03/c++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2022/05/03/c++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/" itemprop="commentCount"></span>
+    <a title="valine" href="/2022/05/03/C++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/05/03/C++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -231,7 +320,7 @@
           <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文整理了最近在学习C++智能指针源码时的一些笔记，代码摘自gcc4.9.2的源码，部分内容出自参考栏中引用的博客<br>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2022/05/03/c++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/#more" rel="contents">
+              <a class="btn" href="/2022/05/03/C++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1007,109 +1096,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/11/21/2018-P-RL-Efficient-ANMS/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="vitalemonate">
-      <meta itemprop="description" content="Ideas don't come out of thin air">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Now or never">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/11/21/2018-P-RL-Efficient-ANMS/" class="post-title-link" itemprop="url">2018 P-RL Efficient ANMS</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2021-11-21 11:06:04 / 修改时间：11:52:18" itemprop="dateCreated datePublished" datetime="2021-11-21T11:06:04+08:00">2021-11-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2021/11/21/2018-P-RL-Efficient-ANMS/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/21/2018-P-RL-Efficient-ANMS/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文题目为<a target="_blank" rel="noopener" href="https://www.researchgate.net/publication/323388062_Efficient_adaptive_non-maximal_suppression_algorithms_for_homogeneous_spatial_keypoint_distribution"><strong>Efficient adaptive non-maximal suppression algorithms for homogeneous spatial keypoint distribution</strong></a>，作者提出了3种高效的自适应非极大值抑制算法：Range Tree ANMS(RT ANMS), K-d Tree ANMS(K-dT ANMS)以及Suppression via Square Covering(SSC)。算法主要有两点contribution:</p>
-<ul>
-<li><p>提出一个方形的搜索范围来减小ANMS的计算复杂度</p>
-</li>
-<li><p>提出一种新的基于二分搜索的初始化搜索范围的确定方法，这种方法可以加速算法的收敛</p>
-</li>
-</ul>
-<p>下图为本文提出的ANMS与其他非极大值抑制的方法的对比</p>
-<div align="center">
-<img src="/all_images/2018 P-RL Efficient ANMS/1.png">
-</div>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/11/21/2018-P-RL-Efficient-ANMS/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1177,7 +1167,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">40</span>
+          <span class="site-state-item-count">41</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1190,7 +1180,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

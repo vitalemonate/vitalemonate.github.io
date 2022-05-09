@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述之前在一次面试中被面试官问到是否了解Eigen中的CRTP设计模式，当时没有听过这个概念，看CRTP的前两个缩写是C和R，联想到Eigen进行矩阵存储时的col优先和row优先，闹了一个大笑话，不知道面试官当时听我的胡扯后是什么想法。面试结束后学习了一下CRTP设计模式，特将学习的内容总结如下">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++ CRTP设计模式">
+<meta property="og:url" content="http://example.com/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述之前在一次面试中被面试官问到是否了解Eigen中的CRTP设计模式，当时没有听过这个概念，看CRTP的前两个缩写是C和R，联想到Eigen进行矩阵存储时的col优先和row优先，闹了一个大笑话，不知道面试官当时听我的胡扯后是什么想法。面试结束后学习了一下CRTP设计模式，特将学习的内容总结如下">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/C++CRTP设计模式/1.png">
+<meta property="og:image" content="http://example.com/all_images/C++CRTP设计模式/3.png">
+<meta property="og:image" content="http://example.com/all_images/C++CRTP设计模式/2.png">
+<meta property="article:published_time" content="2022-05-09T13:27:58.000Z">
+<meta property="article:modified_time" content="2022-05-09T15:33:30.406Z">
+<meta property="article:author" content="vitalemonate">
+<meta property="article:tag" content="设计模式">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/C++CRTP设计模式/1.png">
+
+<link rel="canonical" href="http://example.com/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>C++ CRTP设计模式 | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          C++ CRTP设计模式
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-05-09 21:27:58 / 修改时间：23:33:30" itemprop="dateCreated datePublished" datetime="2022-05-09T21:27:58+08:00">2022-05-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index"><span itemprop="name">C++</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>之前在一次面试中被面试官问到是否了解Eigen中的CRTP设计模式，当时没有听过这个概念，看CRTP的前两个缩写是C和R，联想到Eigen进行矩阵存储时的col优先和row优先，闹了一个大笑话，不知道面试官当时听我的胡扯后是什么想法。面试结束后学习了一下CRTP设计模式，特将学习的内容总结如下<br><span id="more"></span></p>
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>C++ 通过类的继承与虚函数的动态绑定，实现了（动态）多态<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> dynamic_polymorphism &#123;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Base</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Base</span>() : <span class="built_in">i_</span>(<span class="number">0</span>) &#123;&#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~ <span class="built_in">Base</span>() &#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>= <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> i_; &#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> i_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Derived</span> :</span> <span class="keyword">public</span> Base &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123; i_ += i; &#125;</span><br><span class="line">&#125;;</span><br><span class="line">&#125; <span class="comment">// namespace dynamic_polymorphism</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">BM_dynamic</span><span class="params">(benchmark::State&amp; state)</span> </span>&#123;</span><br><span class="line">    dynamic_polymorphism::Base* b = <span class="keyword">new</span> dynamic_polymorphism::Derived;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> _ : state) &#123;</span><br><span class="line">        <span class="built_in">REPEAT</span>(b-&gt;<span class="built_in">f</span>(++i);)</span><br><span class="line">    &#125;</span><br><span class="line">    benchmark::<span class="built_in">DoNotOptimize</span>(b-&gt;<span class="built_in">get</span>());</span><br><span class="line">    state.<span class="built_in">SetItemsProcessed</span>(<span class="number">32</span>*state.<span class="built_in">iterations</span>());</span><br><span class="line">    <span class="keyword">delete</span> b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>在每次执行<code>f(int i)</code>的时候，系统会检查<code>b</code>指向的实例实际的类型，然后调用对应类型的<code>f</code>函数。这一步骤需要通过查询虚函数表（vtable）来实现；由于实际<code>b</code>指向对象的类型在运行时才确定（而不是在编译时就确定），所以这种方式称为动态绑定（或者运行时绑定）。<br>因为每次都需要查询虚函数表，所以动态绑定会降低程序的执行效率。为了兼顾多态与效率，有人提出了<strong>Curiously Recurring Template Pattern （奇异递归模板模式）</strong>的概念。</p>
+<h1 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h1><ul>
+<li>基类是一个模板类，接收子类的类型名字，因此子类的继承列表会类似于<code>Derived: public Base&lt;Derived&gt;</code>；</li>
+<li>基类的函数在函数体中，使用 <code>static_cast&lt; Derived* &gt;</code> 将基类的指针转为（模板）子类的指针，在编译期完成绑定，因此CRTP设计模式也称为<strong>静态多态</strong>，也可以叫<strong>编译期多态</strong></li>
+</ul>
+<p>CRTP模板通常如下<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt; <span class="class"><span class="keyword">class</span> <span class="title">Base</span> &#123;</span></span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Derived</span> :</span> <span class="keyword">public</span> Base&lt;Derived&gt; &#123; <span class="comment">// 派生类将自己的类型传给基类模板</span></span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>一个实例为<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> static_polymorphism &#123;</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt; <span class="class"><span class="keyword">class</span> <span class="title">Base</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Base</span>() : <span class="built_in">i_</span>(<span class="number">0</span>) &#123;&#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">Base</span>() &#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123; <span class="keyword">static_cast</span>&lt;Derived*&gt;(<span class="keyword">this</span>)-&gt;<span class="built_in">f</span>(i); &#125;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> i_; &#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> i_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Derived</span> :</span> <span class="keyword">public</span> Base&lt;Derived&gt; &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123; i_ += i; &#125;</span><br><span class="line">&#125;;</span><br><span class="line">&#125; <span class="comment">// namespace static_polymorphism</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">BM_static</span><span class="params">(benchmark::State&amp; state)</span> </span>&#123;</span><br><span class="line">    static_polymorphism::Base&lt;static_polymorphism::Derived&gt;* b = <span class="keyword">new</span> static_polymorphism::Derived;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> _ : state) &#123;</span><br><span class="line">        <span class="built_in">REPEAT</span>(b-&gt;<span class="built_in">f</span>(++i);)</span><br><span class="line">    &#125;</span><br><span class="line">    benchmark::<span class="built_in">DoNotOptimize</span>(b-&gt;<span class="built_in">get</span>());</span><br><span class="line">    state.<span class="built_in">SetItemsProcessed</span>(<span class="number">32</span>*state.<span class="built_in">iterations</span>());</span><br><span class="line">    <span class="keyword">delete</span> b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="Benchmark测试"><a href="#Benchmark测试" class="headerlink" title="Benchmark测试"></a>Benchmark测试</h1><p>使用<a target="_blank" rel="noopener" href="https://github.com/google/benchmark">google benchmark</a>对c++中的函数对普通成员函数、虚函数以及CRTP进行评测<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;benchmark/benchmark.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REPEAT2(x) x x</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REPEAT4(x) REPEAT2(x) REPEAT2(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REPEAT8(x) REPEAT4(x) REPEAT4(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REPEAT16(x) REPEAT8(x) REPEAT8(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REPEAT32(x) REPEAT16(x) REPEAT16(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REPEAT(x) REPEAT32(x)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> no_polymorphism &#123;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>() : <span class="built_in">i_</span>(<span class="number">0</span>) &#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123; i_ += i; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> i_; &#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> i_;</span><br><span class="line">&#125;;</span><br><span class="line">&#125; <span class="comment">// namespace no_polymorphism</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> dynamic_polymorphism &#123;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Base</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Base</span>() : <span class="built_in">i_</span>(<span class="number">0</span>) &#123;&#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">Base</span>() &#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>= <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> i_; &#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> i_;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Derived</span> :</span> <span class="keyword">public</span> Base &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123; i_ += i; &#125;</span><br><span class="line">&#125;;</span><br><span class="line">&#125; <span class="comment">// namespace dynamic_polymorphism</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> static_polymorphism &#123;</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt; <span class="class"><span class="keyword">class</span> <span class="title">Base</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Base</span>() : <span class="built_in">i_</span>(<span class="number">0</span>) &#123;&#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">Base</span>() &#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123; <span class="keyword">static_cast</span>&lt;Derived*&gt;(<span class="keyword">this</span>)-&gt;<span class="built_in">f</span>(i); &#125;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> i_; &#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> i_;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Derived</span> :</span> <span class="keyword">public</span> Base&lt;Derived&gt; &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123; i_ += i; &#125;</span><br><span class="line">&#125;;</span><br><span class="line">&#125; <span class="comment">// namespace static_polymorphism</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// benchmark需要在一个循环里执行，因此benchmark</span></span><br><span class="line"><span class="comment">// 需要用state来标明函数是否需要继续执行下去，</span></span><br><span class="line"><span class="comment">// 程序中以for (auto _ : state)这一段代码体现</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">BM_none</span><span class="params">(benchmark::State&amp; state)</span> </span>&#123;</span><br><span class="line">    no_polymorphism::A* a = <span class="keyword">new</span> no_polymorphism::A;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> _ : state) &#123;</span><br><span class="line">        <span class="built_in">REPEAT</span>(a-&gt;<span class="built_in">f</span>(++i);)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 防止编译器将表达式优化</span></span><br><span class="line">    benchmark::<span class="built_in">DoNotOptimize</span>(a-&gt;<span class="built_in">get</span>());</span><br><span class="line">    state.<span class="built_in">SetItemsProcessed</span>(<span class="number">32</span>*state.<span class="built_in">iterations</span>());</span><br><span class="line">    <span class="keyword">delete</span> a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">BM_dynamic</span><span class="params">(benchmark::State&amp; state)</span> </span>&#123;</span><br><span class="line">    dynamic_polymorphism::Base* b = <span class="keyword">new</span> dynamic_polymorphism::Derived;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> _ : state) &#123;</span><br><span class="line">        <span class="built_in">REPEAT</span>(b-&gt;<span class="built_in">f</span>(++i);)</span><br><span class="line">    &#125;</span><br><span class="line">    benchmark::<span class="built_in">DoNotOptimize</span>(b-&gt;<span class="built_in">get</span>());</span><br><span class="line">    state.<span class="built_in">SetItemsProcessed</span>(<span class="number">32</span>*state.<span class="built_in">iterations</span>());</span><br><span class="line">    <span class="keyword">delete</span> b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">BM_static</span><span class="params">(benchmark::State&amp; state)</span> </span>&#123;</span><br><span class="line">    static_polymorphism::Base&lt;static_polymorphism::Derived&gt;* b = <span class="keyword">new</span> static_polymorphism::Derived;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> _ : state) &#123;</span><br><span class="line">        <span class="built_in">REPEAT</span>(b-&gt;<span class="built_in">f</span>(++i);)</span><br><span class="line">    &#125;</span><br><span class="line">    benchmark::<span class="built_in">DoNotOptimize</span>(b-&gt;<span class="built_in">get</span>());</span><br><span class="line">    state.<span class="built_in">SetItemsProcessed</span>(<span class="number">32</span>*state.<span class="built_in">iterations</span>());</span><br><span class="line">    <span class="keyword">delete</span> b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">BENCHMARK</span>(BM_none)-&gt;<span class="built_in">Iterations</span>(<span class="number">10000000</span>);</span><br><span class="line"><span class="built_in">BENCHMARK</span>(BM_dynamic)-&gt;<span class="built_in">Iterations</span>(<span class="number">10000000</span>);</span><br><span class="line"><span class="built_in">BENCHMARK</span>(BM_static)-&gt;<span class="built_in">Iterations</span>(<span class="number">10000000</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">BENCHMARK_MAIN</span>();</span><br></pre></td></tr></table></figure></p>
+<p>测试结果如下（O2优化）</p>
+<div align="center">
+<img src="/all_images/C++CRTP设计模式/1.png">
+</div>
+
+<p>可以看出CRTP模式和Normal模式差不多，Virtual模式最慢</p>
+<h1 id="Eigen实例"><a href="#Eigen实例" class="headerlink" title="Eigen实例"></a>Eigen实例</h1><p>Eigen的<a target="_blank" rel="noopener" href="https://eigen.tuxfamily.org/dox/TopicClassHierarchy.html">官方文档</a>中关于整个类的实现有这么一段话</p>
+<div align="center">
+<img src="/all_images/C++CRTP设计模式/3.png">
+</div>
+
+<p>核心点有两个：</p>
+<ul>
+<li><p>Eigen的类层次结构旨在避免虚函数，因为它们的开销会显着影响性能。相反，Eigen 使用CRTP实现了静态多态</p>
+</li>
+<li><p>Eigen的类设计避免多继承，因为发现有的编译器不支持空基类优化（EBO），而EBO这对于Eigen的固定大小类型至关重要</p>
+</li>
+</ul>
+<p>下面以Eigen中的Matrix类的实现来说明CRTP的实现<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Scalar, <span class="keyword">int</span> _Rows, <span class="keyword">int</span> _Cols, <span class="keyword">int</span> _Options, <span class="keyword">int</span> _MaxRows, <span class="keyword">int</span> _MaxCols&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Matrix</span></span></span><br><span class="line"><span class="class">  :</span> <span class="keyword">public</span> PlainObjectBase&lt;Matrix&lt;_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols&gt; &gt;</span><br><span class="line">&#123;</span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>Matrix以及Array的类继承体系如下图所示，直接基类PlainObjectBase和Matrix使用了CRTP模式，Matrix将自己作为参数传入到继承的基类中。而其他的基类的继承采用的是普通的继承关系。</p>
+<div align="center">
+<img src="/all_images/C++CRTP设计模式/2.png">
+</div>
+
+<p>看一下EigenBase中的一些接口，发现cols()，rows()这些是通过派生类间接实现的，那么在派生类中就不用再次定义这些接口了。基于此，我们发现Matrix中的接口集中是一些构造接口，并非是预想的那样，里面会有好多矩阵操作的接口。实际上，Eigen正是将矩阵的各种操作进行不断的抽象，才出现我们今天看到的这么多继承等级。除此之外，EigenBase等也可以单独当作模板使用。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//EigenBase中的一些接口</span></span><br><span class="line"><span class="comment">/** \returns a reference to the derived object */</span></span><br><span class="line"><span class="function">EIGEN_DEVICE_FUNC</span></span><br><span class="line"><span class="function">Derived&amp; <span class="title">derived</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> *<span class="keyword">static_cast</span>&lt;Derived*&gt;(<span class="keyword">this</span>); &#125;<span class="comment">//获取派生类引用</span></span><br><span class="line"><span class="comment">/** \returns a const reference to the derived object */</span></span><br><span class="line"><span class="function">EIGEN_DEVICE_FUNC</span></span><br><span class="line"><span class="function"><span class="keyword">const</span> Derived&amp; <span class="title">derived</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> *<span class="keyword">static_cast</span>&lt;<span class="keyword">const</span> Derived*&gt;(<span class="keyword">this</span>); &#125;</span><br><span class="line"></span><br><span class="line"><span class="function">EIGEN_DEVICE_FUNC</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> Derived&amp; <span class="title">const_cast_derived</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"></span>&#123; <span class="keyword">return</span> *<span class="keyword">static_cast</span>&lt;Derived*&gt;(<span class="keyword">const_cast</span>&lt;EigenBase*&gt;(<span class="keyword">this</span>)); &#125;</span><br><span class="line"><span class="function">EIGEN_DEVICE_FUNC</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">const</span> Derived&amp; <span class="title">const_derived</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"></span>&#123; <span class="keyword">return</span> *<span class="keyword">static_cast</span>&lt;<span class="keyword">const</span> Derived*&gt;(<span class="keyword">this</span>); &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 通过派生类的实现来实现,实际上在PlaibObjectBase中有定义rows()，</span></span><br><span class="line"><span class="comment">/** \returns the number of rows. \sa cols(), RowsAtCompileTime */</span></span><br><span class="line"><span class="function">EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> Index <span class="title">rows</span><span class="params">()</span> <span class="keyword">const</span> EIGEN_NOEXCEPT </span>&#123; <span class="keyword">return</span> <span class="built_in">derived</span>().<span class="built_in">rows</span>(); &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** \returns the number of columns. \sa rows(), ColsAtCompileTime*/</span></span><br><span class="line"><span class="function">EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> Index <span class="title">cols</span><span class="params">()</span> <span class="keyword">const</span> EIGEN_NOEXCEPT </span>&#123; <span class="keyword">return</span> <span class="built_in">derived</span>().<span class="built_in">cols</span>(); &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在PlaibObjectBase中实现rows()以及cols()，通过调用DenseStorage的rows实现的</span></span><br><span class="line"><span class="function">EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR</span></span><br><span class="line"><span class="function">Index <span class="title">rows</span><span class="params">()</span> <span class="keyword">const</span> EIGEN_NOEXCEPT </span>&#123; <span class="keyword">return</span> m_storage.<span class="built_in">rows</span>(); &#125;</span><br><span class="line"><span class="function">EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR</span></span><br><span class="line"><span class="function">Index <span class="title">cols</span><span class="params">()</span> <span class="keyword">const</span> EIGEN_NOEXCEPT </span>&#123; <span class="keyword">return</span> m_storage.<span class="built_in">cols</span>(); &#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/ruiruiafafafa/article/details/80801423">google benchmark使用教程</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/142407249">Design Patterns With C++（八）CRTP（上）</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://liam.page/2016/11/26/Introduction-to-CRTP-in-Cpp/">C++ 惯用法 CRTP 简介</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/419747485">C/C++杂谈：CRTP benchmark</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/sing-lau/articles/15941388.html">Eigen源码阅读之二：奇异递归模板模式 CRTP</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://eigen.tuxfamily.org/dox/TopicClassHierarchy.html">Eigen The class hierarchy</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag"># 设计模式</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/05/03/C++%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E7%AC%94%E8%AE%B0/" rel="prev" title="C++智能指针笔记">
+      <i class="fa fa-chevron-left"></i> C++智能指针笔记
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">3.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Benchmark%E6%B5%8B%E8%AF%95"><span class="nav-number">4.</span> <span class="nav-text">Benchmark测试</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Eigen%E5%AE%9E%E4%BE%8B"><span class="nav-number">5.</span> <span class="nav-text">Eigen实例</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas don't come out of thin air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">41</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/vitalemonate" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;vitalemonate" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/952070377@qq.com" title="E-Mail → 952070377@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'WXYIx5XRBQI0dHgsV4ppd4xj-MdYXbMMI',
+      appKey     : 'xufQBscNKTzWCqkruodkqjSd',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
