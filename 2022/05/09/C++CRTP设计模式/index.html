@@ -20,18 +20,18 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="概述之前在一次面试中被面试官问到是否了解Eigen中的CRTP设计模式，当时没有听过这个概念，看CRTP的前两个缩写是C和R，联想到Eigen进行矩阵存储时的col优先和row优先，闹了一个大笑话，不知道面试官当时听我的胡扯后是什么想法。面试结束后学习了一下CRTP设计模式，特将学习的内容总结如下">
+  <meta name="description" content="概述将Eigen中广泛使用的CRTP设计模式的内容总结一下">
 <meta property="og:type" content="article">
 <meta property="og:title" content="C++ CRTP设计模式">
 <meta property="og:url" content="http://example.com/2022/05/09/C++CRTP%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/index.html">
 <meta property="og:site_name" content="Now or never">
-<meta property="og:description" content="概述之前在一次面试中被面试官问到是否了解Eigen中的CRTP设计模式，当时没有听过这个概念，看CRTP的前两个缩写是C和R，联想到Eigen进行矩阵存储时的col优先和row优先，闹了一个大笑话，不知道面试官当时听我的胡扯后是什么想法。面试结束后学习了一下CRTP设计模式，特将学习的内容总结如下">
+<meta property="og:description" content="概述将Eigen中广泛使用的CRTP设计模式的内容总结一下">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/all_images/C++CRTP设计模式/1.png">
 <meta property="og:image" content="http://example.com/all_images/C++CRTP设计模式/3.png">
 <meta property="og:image" content="http://example.com/all_images/C++CRTP设计模式/2.png">
 <meta property="article:published_time" content="2022-05-09T13:27:58.000Z">
-<meta property="article:modified_time" content="2022-05-09T15:33:30.406Z">
+<meta property="article:modified_time" content="2022-09-07T09:02:36.584Z">
 <meta property="article:author" content="vitalemonate">
 <meta property="article:tag" content="设计模式">
 <meta name="twitter:card" content="summary">
@@ -190,10 +190,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2022-05-09 21:27:58 / 修改时间：23:33:30" itemprop="dateCreated datePublished" datetime="2022-05-09T21:27:58+08:00">2022-05-09</time>
+              <time title="创建时间：2022-05-09 21:27:58" itemprop="dateCreated datePublished" datetime="2022-05-09T21:27:58+08:00">2022-05-09</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-09-07 17:02:36" itemprop="dateModified" datetime="2022-09-07T17:02:36+08:00">2022-09-07</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -236,7 +242,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>之前在一次面试中被面试官问到是否了解Eigen中的CRTP设计模式，当时没有听过这个概念，看CRTP的前两个缩写是C和R，联想到Eigen进行矩阵存储时的col优先和row优先，闹了一个大笑话，不知道面试官当时听我的胡扯后是什么想法。面试结束后学习了一下CRTP设计模式，特将学习的内容总结如下<br><span id="more"></span></p>
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>将Eigen中广泛使用的CRTP设计模式的内容总结一下<br><span id="more"></span></p>
 <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>C++ 通过类的继承与虚函数的动态绑定，实现了（动态）多态<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> dynamic_polymorphism &#123;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Base</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Base</span>() : <span class="built_in">i_</span>(<span class="number">0</span>) &#123;&#125;</span><br><span class="line">    <span class="keyword">virtual</span> ~ <span class="built_in">Base</span>() &#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>= <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">get</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> i_; &#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="keyword">int</span> i_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Derived</span> :</span> <span class="keyword">public</span> Base &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123; i_ += i; &#125;</span><br><span class="line">&#125;;</span><br><span class="line">&#125; <span class="comment">// namespace dynamic_polymorphism</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">BM_dynamic</span><span class="params">(benchmark::State&amp; state)</span> </span>&#123;</span><br><span class="line">    dynamic_polymorphism::Base* b = <span class="keyword">new</span> dynamic_polymorphism::Derived;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span> _ : state) &#123;</span><br><span class="line">        <span class="built_in">REPEAT</span>(b-&gt;<span class="built_in">f</span>(++i);)</span><br><span class="line">    &#125;</span><br><span class="line">    benchmark::<span class="built_in">DoNotOptimize</span>(b-&gt;<span class="built_in">get</span>());</span><br><span class="line">    state.<span class="built_in">SetItemsProcessed</span>(<span class="number">32</span>*state.<span class="built_in">iterations</span>());</span><br><span class="line">    <span class="keyword">delete</span> b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>在每次执行<code>f(int i)</code>的时候，系统会检查<code>b</code>指向的实例实际的类型，然后调用对应类型的<code>f</code>函数。这一步骤需要通过查询虚函数表（vtable）来实现；由于实际<code>b</code>指向对象的类型在运行时才确定（而不是在编译时就确定），所以这种方式称为动态绑定（或者运行时绑定）。<br>因为每次都需要查询虚函数表，所以动态绑定会降低程序的执行效率。为了兼顾多态与效率，有人提出了<strong>Curiously Recurring Template Pattern （奇异递归模板模式）</strong>的概念。</p>
 <h1 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h1><ul>
 <li>基类是一个模板类，接收子类的类型名字，因此子类的继承列表会类似于<code>Derived: public Base&lt;Derived&gt;</code>；</li>
