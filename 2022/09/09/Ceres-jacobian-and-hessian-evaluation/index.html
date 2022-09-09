@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述本文以VINS-Mono为例，记录使用Ceres的接口获取优化问题中的Jacobian并可视化Jacobian及Hessian的过程。主要内容有：  使用接口获得CRS类型的Jacobian CRS类型矩阵转Eigen格式的矩阵 Jacobian矩阵以及Hessian矩阵的可视化">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ceres jacobian and hessian evaluation">
+<meta property="og:url" content="http://example.com/2022/09/09/Ceres-jacobian-and-hessian-evaluation/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述本文以VINS-Mono为例，记录使用Ceres的接口获取优化问题中的Jacobian并可视化Jacobian及Hessian的过程。主要内容有：  使用接口获得CRS类型的Jacobian CRS类型矩阵转Eigen格式的矩阵 Jacobian矩阵以及Hessian矩阵的可视化">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/Ceres%20jacobian%20and%20hessian%20evaluation/1.png">
+<meta property="og:image" content="http://example.com/all_images/Ceres%20jacobian%20and%20hessian%20evaluation/2.png">
+<meta property="article:published_time" content="2022-09-09T03:11:02.000Z">
+<meta property="article:modified_time" content="2022-09-09T04:38:00.721Z">
+<meta property="article:author" content="vitalemonate">
+<meta property="article:tag" content="Ceres">
+<meta property="article:tag" content="Jacobian">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/Ceres%20jacobian%20and%20hessian%20evaluation/1.png">
+
+<link rel="canonical" href="http://example.com/2022/09/09/Ceres-jacobian-and-hessian-evaluation/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Ceres jacobian and hessian evaluation | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/09/09/Ceres-jacobian-and-hessian-evaluation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ceres jacobian and hessian evaluation
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-09-09 11:11:02 / 修改时间：12:38:00" itemprop="dateCreated datePublished" datetime="2022-09-09T11:11:02+08:00">2022-09-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/09/09/Ceres-jacobian-and-hessian-evaluation/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/09/09/Ceres-jacobian-and-hessian-evaluation/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文以VINS-Mono为例，记录使用Ceres的接口获取优化问题中的Jacobian并可视化Jacobian及Hessian的过程。主要内容有：</p>
+<ul>
+<li>使用接口获得CRS类型的Jacobian</li>
+<li>CRS类型矩阵转Eigen格式的矩阵</li>
+<li>Jacobian矩阵以及Hessian矩阵的可视化<span id="more"></span>
+</li>
+</ul>
+<h1 id="Ceres接口"><a href="#Ceres接口" class="headerlink" title="Ceres接口"></a>Ceres接口</h1><p>Ceres中提供了输出cost, residual, gradient以及jacobian的<a target="_blank" rel="noopener" href="http://ceres-solver.org/nnls_modeling.html#_CPPv4N5ceres7Problem8EvaluateERKN7Problem15EvaluateOptionsEPdP6vectorIdEP6vectorIdEP9CRSMatrix">接口</a>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">Problem::Evaluate</span><span class="params">(<span class="keyword">const</span> Problem::EvaluateOptions &amp;options,</span></span></span><br><span class="line"><span class="params"><span class="function">                       <span class="keyword">double</span> *cost,</span></span></span><br><span class="line"><span class="params"><span class="function">                       vector&lt;<span class="keyword">double</span>&gt; *residuals,</span></span></span><br><span class="line"><span class="params"><span class="function">                       vector&lt;<span class="keyword">double</span>&gt; *gradient,</span></span></span><br><span class="line"><span class="params"><span class="function">                       CRSMatrix *jacobian)</span>¶</span></span><br></pre></td></tr></table></figure>
+<p>在VINS-Mono中调用接口得到CRSMatrix形式的Jacobian的代码如下<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Estimator::optimization</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    TicToc t_solver;</span><br><span class="line">    ceres::Solver::Summary summary;</span><br><span class="line">    ceres::<span class="built_in">Solve</span>(options, &amp;problem, &amp;summary);</span><br><span class="line">    <span class="comment">//cout &lt;&lt; summary.BriefReport() &lt;&lt; endl;</span></span><br><span class="line">    <span class="built_in">ROS_DEBUG</span>(<span class="string">&quot;Iterations : %d&quot;</span>, <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(summary.iterations.<span class="built_in">size</span>()));</span><br><span class="line">    <span class="built_in">ROS_DEBUG</span>(<span class="string">&quot;solver costs: %f&quot;</span>, t_solver.<span class="built_in">toc</span>());</span><br><span class="line"></span><br><span class="line">    <span class="built_in">evaluateBA</span>(problem, summary);</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;evaluateBA end&quot;</span> &lt;&lt; endl;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Estimator::evaluateBA</span><span class="params">(ceres::Problem&amp; problem, <span class="keyword">const</span> ceres::Solver::Summary&amp; summary)</span></span>&#123;</span><br><span class="line">    cout &lt;&lt; summary.<span class="built_in">FullReport</span>() &lt;&lt; endl;</span><br><span class="line"></span><br><span class="line">    ceres::Problem::EvaluateOptions EvalOpts;</span><br><span class="line">    ceres::CRSMatrix jacobian_crs_matrix;</span><br><span class="line">    problem.<span class="built_in">Evaluate</span>(EvalOpts, <span class="literal">nullptr</span>, <span class="literal">nullptr</span>, <span class="literal">nullptr</span>, &amp;jacobian_crs_matrix);</span><br><span class="line"></span><br><span class="line">    TicToc t_convert_J;</span><br><span class="line">    Eigen::MatrixXd J = <span class="built_in">CRSMatrix2EigenMatrix</span>(&amp;jacobian_crs_matrix);</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;convert sparse matrix cost &quot;</span> &lt;&lt; t_convert_J.<span class="built_in">toc</span>() &lt;&lt; endl;</span><br><span class="line"></span><br><span class="line">    TicToc t_construct_H;</span><br><span class="line">    Eigen::MatrixXd H = J.<span class="built_in">transpose</span>()*J;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;construct H cost &quot;</span> &lt;&lt; t_construct_H.<span class="built_in">toc</span>() &lt;&lt; endl;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">static</span> ofstream <span class="title">J_file</span><span class="params">(OUTPUT_PATH+<span class="string">&quot;/jacobian.txt&quot;</span>)</span></span>;</span><br><span class="line">    J_file &lt;&lt; fixed;</span><br><span class="line">    J_file.<span class="built_in">precision</span>(<span class="number">9</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> J_rows = J.<span class="built_in">rows</span>(), J_cols = J.<span class="built_in">cols</span>();</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; J_rows; ++i)&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>;j &lt; J_cols; ++j)&#123;</span><br><span class="line">            J_file &lt;&lt; <span class="built_in">J</span>(i, j);</span><br><span class="line">            <span class="keyword">if</span>(j == J_cols - <span class="number">1</span>)&#123;</span><br><span class="line">                J_file &lt;&lt; endl;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span>&#123;</span><br><span class="line">                J_file &lt;&lt; <span class="string">&quot; &quot;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">static</span> ofstream <span class="title">H_file</span><span class="params">(OUTPUT_PATH+<span class="string">&quot;/hessian.txt&quot;</span>)</span></span>;</span><br><span class="line">    H_file &lt;&lt; fixed;</span><br><span class="line">    H_file.<span class="built_in">precision</span>(<span class="number">9</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> H_rows = H.<span class="built_in">rows</span>(), H_cols = H.<span class="built_in">cols</span>();</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; H_rows; ++i)&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; H_cols; ++j)&#123;</span><br><span class="line">            H_file &lt;&lt; <span class="built_in">H</span>(i, j);</span><br><span class="line">            <span class="keyword">if</span>(j == H_cols - <span class="number">1</span>)&#123;</span><br><span class="line">                H_file &lt;&lt; endl;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span>&#123;</span><br><span class="line">                H_file &lt;&lt; <span class="string">&quot; &quot;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="CRS类型矩阵转常规格式的矩阵"><a href="#CRS类型矩阵转常规格式的矩阵" class="headerlink" title="CRS类型矩阵转常规格式的矩阵"></a>CRS类型矩阵转常规格式的矩阵</h1><p>ceres的evaluate接口中输出的是<a target="_blank" rel="noopener" href="http://ceres-solver.org/nnls_solving.html?highlight=crsmatrix#_CPPv4N5ceres9CRSMatrixE">CRSMatrix</a>类型的矩阵。CRSMatrix是一种压缩稀疏矩阵的存储方式，全称为compressed row sparse matrix，意为行稀疏压缩矩阵，ceres中的定义如下<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// A compressed row sparse matrix used primarily for communicating the</span></span><br><span class="line"><span class="comment">// Jacobian matrix to the user.</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">CERES_EXPORT</span> <span class="title">CRSMatrix</span> &#123;</span></span><br><span class="line">  <span class="built_in">CRSMatrix</span>() : <span class="built_in">num_rows</span>(<span class="number">0</span>), <span class="built_in">num_cols</span>(<span class="number">0</span>) &#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> num_rows;</span><br><span class="line">  <span class="keyword">int</span> num_cols;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// A compressed row matrix stores its contents in three arrays,</span></span><br><span class="line">  <span class="comment">// rows, cols and values.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// rows is a num_rows + 1 sized array that points into the cols and</span></span><br><span class="line">  <span class="comment">// values array. For each row i:</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// cols[rows[i]] ... cols[rows[i + 1] - 1] are the indices of the</span></span><br><span class="line">  <span class="comment">// non-zero columns of row i.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// values[rows[i]] .. values[rows[i + 1] - 1] are the values of the</span></span><br><span class="line">  <span class="comment">// corresponding entries.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// cols and values contain as many entries as there are non-zeros in</span></span><br><span class="line">  <span class="comment">// the matrix.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// e.g, consider the 3x4 sparse matrix</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">//  [ 0 10  0  4 ]</span></span><br><span class="line">  <span class="comment">//  [ 0  2 -3  2 ]</span></span><br><span class="line">  <span class="comment">//  [ 1  2  0  0 ]</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// The three arrays will be:</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">//            -row0-  ---row1---  -row2-</span></span><br><span class="line">  <span class="comment">//  rows   = [ 0,      2,          5,     7]</span></span><br><span class="line">  <span class="comment">//  cols   = [ 1,  3,  1,  2,  3,  0,  1]</span></span><br><span class="line">  <span class="comment">//  values = [10,  4,  2, -3,  2,  1,  2]</span></span><br><span class="line"></span><br><span class="line">  std::vector&lt;<span class="keyword">int</span>&gt; cols;</span><br><span class="line">  std::vector&lt;<span class="keyword">int</span>&gt; rows;</span><br><span class="line">  std::vector&lt;<span class="keyword">double</span>&gt; values;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>CRSMatrix主要由<code>cols, rows</code>及<code>values</code>这3个vector来存储，其中<code>rows[i+1] - row[i]</code>表示第<code>i</code>行非零元素的个数，而第<code>i</code>行非零元素的列坐标为<code>cols[rows[i]] ~ cols[row[i+1]-1]</code>，非零元素的值为<code>values[rows[i]] ~ values[row[i+1]-1]</code>，即</p>
+<p>\begin{align}\notag<br>matrix[i][cols[rows[i]] &amp;= values[rows[i]]\\ \notag<br>matrix[i][cols[rows[i]+1] &amp;= values[rows[i]+1]\\ \notag<br>…\\<br>matrix[i][cols[rows[i+1]-1] &amp;= values[rows[i+1]-1]<br>\end{align}</p>
+<p>实现CRSMatrix转为常用的Eigen类型的矩阵的代码如下<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Eigen::MatrixXd <span class="title">CRSMatrix2EigenMatrix</span><span class="params">(ceres::CRSMatrix* jacobian_crs_matrix)</span></span>&#123;</span><br><span class="line">    <span class="function">Eigen::MatrixXd <span class="title">J</span><span class="params">(jacobian_crs_matrix-&gt;num_rows, jacobian_crs_matrix-&gt;num_cols)</span></span>;</span><br><span class="line">    J.<span class="built_in">setZero</span>();</span><br><span class="line"></span><br><span class="line">    std::vector&lt;<span class="keyword">int</span>&gt; jacobian_crs_matrix_rows, jacobian_crs_matrix_cols;</span><br><span class="line">    std::vector&lt;<span class="keyword">double</span>&gt; jacobian_crs_matrix_values;</span><br><span class="line">    jacobian_crs_matrix_rows = jacobian_crs_matrix-&gt;rows;</span><br><span class="line">    jacobian_crs_matrix_cols = jacobian_crs_matrix-&gt;cols;</span><br><span class="line">    jacobian_crs_matrix_values = jacobian_crs_matrix-&gt;values;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> cur_index_in_cols_and_values = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// rows is a num_rows + 1 sized array</span></span><br><span class="line">    <span class="keyword">int</span> row_size = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(jacobian_crs_matrix_rows.<span class="built_in">size</span>()) - <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// outer loop traverse rows, inner loop traverse cols and values</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> row_index = <span class="number">0</span>; row_index &lt; row_size; ++row_index)&#123;</span><br><span class="line">        <span class="keyword">while</span>(cur_index_in_cols_and_values &lt; jacobian_crs_matrix_rows[row_index+<span class="number">1</span>])&#123;</span><br><span class="line">            <span class="built_in">J</span>(row_index, jacobian_crs_matrix_cols[cur_index_in_cols_and_values]) = jacobian_crs_matrix_values[cur_index_in_cols_and_values];</span><br><span class="line">            cur_index_in_cols_and_values++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> J;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>测试代码见<a target="_blank" rel="noopener" href="https://github.com/vitalemonate/testCRSMatrix">github</a></p>
+<h1 id="Jacobian矩阵以及Hessian矩阵的可视化"><a href="#Jacobian矩阵以及Hessian矩阵的可视化" class="headerlink" title="Jacobian矩阵以及Hessian矩阵的可视化"></a>Jacobian矩阵以及Hessian矩阵的可视化</h1><p>由于Jacobian和Hessian都是稀疏矩阵，可以使用scipy中用于处理稀疏矩阵的<a target="_blank" rel="noopener" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">接口</a>结合matplotlib进行可视化，对应的python脚本如下<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">from</span> scipy.sparse <span class="keyword">import</span> csr_matrix</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line">file_path = os.path.abspath(sys.argv[<span class="number">1</span>])</span><br><span class="line">dense_matrix = pd.read_table(file_path, header=<span class="literal">None</span>, sep=<span class="string">&#x27; &#x27;</span>)</span><br><span class="line">dense_matrix = np.array(dense_matrix.values.tolist(), dtype=<span class="string">&#x27;float64&#x27;</span>)</span><br><span class="line"></span><br><span class="line">sparse_matrix = csr_matrix(dense_matrix)</span><br><span class="line">plt.spy(sparse_matrix)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure></p>
+<div align="center">
+<img src="/all_images/Ceres jacobian and hessian evaluation/1.png">
+</div>
+
+<div align="center">
+<img src="/all_images/Ceres jacobian and hessian evaluation/2.png">
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Ceres/" rel="tag"># Ceres</a>
+              <a href="/tags/Jacobian/" rel="tag"># Jacobian</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/05/10/%E7%89%9B%E9%A1%BF%E6%B3%95%E4%B8%8E%E9%AB%98%E6%96%AF%E7%89%9B%E9%A1%BF%E6%B3%95/" rel="prev" title="牛顿法与高斯牛顿法">
+      <i class="fa fa-chevron-left"></i> 牛顿法与高斯牛顿法
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Ceres%E6%8E%A5%E5%8F%A3"><span class="nav-number">2.</span> <span class="nav-text">Ceres接口</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CRS%E7%B1%BB%E5%9E%8B%E7%9F%A9%E9%98%B5%E8%BD%AC%E5%B8%B8%E8%A7%84%E6%A0%BC%E5%BC%8F%E7%9A%84%E7%9F%A9%E9%98%B5"><span class="nav-number">3.</span> <span class="nav-text">CRS类型矩阵转常规格式的矩阵</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Jacobian%E7%9F%A9%E9%98%B5%E4%BB%A5%E5%8F%8AHessian%E7%9F%A9%E9%98%B5%E7%9A%84%E5%8F%AF%E8%A7%86%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">Jacobian矩阵以及Hessian矩阵的可视化</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas don't come out of thin air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">43</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/vitalemonate" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;vitalemonate" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/952070377@qq.com" title="E-Mail → 952070377@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'WXYIx5XRBQI0dHgsV4ppd4xj-MdYXbMMI',
+      appKey     : 'xufQBscNKTzWCqkruodkqjSd',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

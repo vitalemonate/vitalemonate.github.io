@@ -160,6 +160,99 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/09/09/Ceres-jacobian-and-hessian-evaluation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/09/09/Ceres-jacobian-and-hessian-evaluation/" class="post-title-link" itemprop="url">Ceres jacobian and hessian evaluation</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-09-09 11:11:02 / 修改时间：12:38:00" itemprop="dateCreated datePublished" datetime="2022-09-09T11:11:02+08:00">2022-09-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/09/09/Ceres-jacobian-and-hessian-evaluation/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/09/09/Ceres-jacobian-and-hessian-evaluation/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文以VINS-Mono为例，记录使用Ceres的接口获取优化问题中的Jacobian并可视化Jacobian及Hessian的过程。主要内容有：</p>
+<ul>
+<li>使用接口获得CRS类型的Jacobian</li>
+<li>CRS类型矩阵转Eigen格式的矩阵</li>
+<li>Jacobian矩阵以及Hessian矩阵的可视化
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/09/09/Ceres-jacobian-and-hessian-evaluation/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://example.com/2022/05/10/%E7%89%9B%E9%A1%BF%E6%B3%95%E4%B8%8E%E9%AB%98%E6%96%AF%E7%89%9B%E9%A1%BF%E6%B3%95/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -183,10 +276,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2022-05-10 19:03:19 / 修改时间：21:53:03" itemprop="dateCreated datePublished" datetime="2022-05-10T19:03:19+08:00">2022-05-10</time>
+              <time title="创建时间：2022-05-10 19:03:19" itemprop="dateCreated datePublished" datetime="2022-05-10T19:03:19+08:00">2022-05-10</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-09-09 11:14:02" itemprop="dateModified" datetime="2022-09-09T11:14:02+08:00">2022-09-09</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -222,7 +321,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>最近面试时遇到用一道用高斯牛顿法求平方根的编程题，虽然之前在leetcode上做过用<a target="_blank" rel="noopener" href="https://leetcode.cn/problems/sqrtx/">牛顿法求平方根的题</a>，但是可能还是理解的不是很透彻，所以面试时只写出来了算法大致的流程，代码没有写完整。最近刚好有一些空间时间，就复习了一下之前整理在幕布中的非线性优化的笔记，将其中牛顿法以及高斯牛顿法的笔记整理如下，同时也分析了一下牛顿法和高斯牛顿法求平方根的实现过程并附上测试代码。<br>
+          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>最近面试时遇到用一道用高斯牛顿法求平方根的编程题，类似<a target="_blank" rel="noopener" href="https://leetcode.cn/problems/sqrtx/">leetcode 69 牛顿法求平方根的题</a>，最近刚好有一些时间，整理了一下之前非线性优化的笔记，将其中牛顿法以及高斯牛顿法的笔记整理如下，同时也分析了一下牛顿法和高斯牛顿法求平方根的实现过程并附上测试代码。<br>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2022/05/10/%E7%89%9B%E9%A1%BF%E6%B3%95%E4%B8%8E%E9%AB%98%E6%96%AF%E7%89%9B%E9%A1%BF%E6%B3%95/#more" rel="contents">
@@ -1001,101 +1100,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="vitalemonate">
-      <meta itemprop="description" content="Ideas don't come out of thin air">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Now or never">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="post-title-link" itemprop="url">SVD复习笔记</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-01-13 10:59:45" itemprop="dateCreated datePublished" datetime="2022-01-13T10:59:45+08:00">2022-01-13</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-07 00:13:24" itemprop="dateModified" datetime="2022-03-07T00:13:24+08:00">2022-03-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">数学</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本篇文章主要整理了SVD的相关基础知识，主要内容包括SVD与特征值分解、SVD的定义与应用、齐次/非齐次线性方程组解的情况以及SVD解线性方程组。<br>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/01/13/SVD%E5%A4%8D%E4%B9%A0%E7%AC%94%E8%AE%B0/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1167,7 +1171,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">42</span>
+          <span class="site-state-item-count">43</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1180,7 +1184,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-count">14</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
