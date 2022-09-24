@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述DogLeg是一种最速下降法与高斯牛顿法结合的算法，上层策略采用的是信赖区域法。本文主要介绍其原理以及ceres中的实现，主要参考文档为Methods for non-linear least squares problems和ceres官方文档">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DogLeg原理与ceres实现">
+<meta property="og:url" content="http://example.com/2022/09/24/DogLeg%E5%8E%9F%E7%90%86%E4%B8%8Eceres%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="Now or never">
+<meta property="og:description" content="概述DogLeg是一种最速下降法与高斯牛顿法结合的算法，上层策略采用的是信赖区域法。本文主要介绍其原理以及ceres中的实现，主要参考文档为Methods for non-linear least squares problems和ceres官方文档">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/1.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/2.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/3.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/4.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/5.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/6.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/7.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/8.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/9.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/10.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/11.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/12.png">
+<meta property="og:image" content="http://example.com/all_images/DogLeg原理与ceres实现/13.png">
+<meta property="article:published_time" content="2022-09-24T12:15:24.000Z">
+<meta property="article:modified_time" content="2022-09-24T12:58:25.422Z">
+<meta property="article:author" content="vitalemonate">
+<meta property="article:tag" content="Ceres">
+<meta property="article:tag" content="非线性优化">
+<meta property="article:tag" content="DogLeg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/all_images/DogLeg原理与ceres实现/1.png">
+
+<link rel="canonical" href="http://example.com/2022/09/24/DogLeg%E5%8E%9F%E7%90%86%E4%B8%8Eceres%E5%AE%9E%E7%8E%B0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DogLeg原理与ceres实现 | Now or never</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Now or never</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">勿在浮沙筑高台</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/09/24/DogLeg%E5%8E%9F%E7%90%86%E4%B8%8Eceres%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DogLeg原理与ceres实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-09-24 20:15:24 / 修改时间：20:58:25" itemprop="dateCreated datePublished" datetime="2022-09-24T20:15:24+08:00">2022-09-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SLAM/" itemprop="url" rel="index"><span itemprop="name">SLAM</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/09/24/DogLeg%E5%8E%9F%E7%90%86%E4%B8%8Eceres%E5%AE%9E%E7%8E%B0/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/09/24/DogLeg%E5%8E%9F%E7%90%86%E4%B8%8Eceres%E5%AE%9E%E7%8E%B0/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>DogLeg是一种最速下降法与高斯牛顿法结合的算法，上层策略采用的是信赖区域法。本文主要介绍其原理以及ceres中的实现，主要参考文档为<a target="_blank" rel="noopener" href="http://www2.imm.dtu.dk/pubdb/edoc/imm3215.pdf">Methods for non-linear least squares problems</a>和<a target="_blank" rel="noopener" href="http://ceres-solver.org/nnls_solving.html#dogleg">ceres官方文档</a></p>
+<span id="more"></span>
+<h1 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h1><h2 id="Gauss-Newton-GN-step"><a href="#Gauss-Newton-GN-step" class="headerlink" title="Gauss-Newton(GN) step"></a>Gauss-Newton(GN) step</h2><div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/1.png">
+</div>
+
+<h2 id="Steepest-descent-SD-step"><a href="#Steepest-descent-SD-step" class="headerlink" title="Steepest descent(SD) step"></a>Steepest descent(SD) step</h2><div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/2.png">
+</div>
+
+<p>式(3.18b)只是最速下降的方向，还需要定义步长</p>
+<div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/3.png">
+</div>
+
+<h2 id="DogLeg-DL-step"><a href="#DogLeg-DL-step" class="headerlink" title="DogLeg(DL) step"></a>DogLeg(DL) step</h2><div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/4.png">
+</div>
+
+<p>主要根据GN step和SD step与信赖区域半径的大小关系来决定DL step，下图参考自<a target="_blank" rel="noopener" href="https://blog.csdn.net/lusongno1/article/details/80558684">信赖域狗腿(dogleg)方法_陆嵩的博客-CSDN博客_dogleg算法</a></p>
+<h3 id="GN-step-lt-radius"><a href="#GN-step-lt-radius" class="headerlink" title="GN step &lt;= radius"></a>GN step &lt;= radius</h3><p>当GN step在信赖区域内时，令本轮迭代的step为GN step</p>
+<div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/5.png">
+</div>
+
+<h3 id="SD-step-gt-radius"><a href="#SD-step-gt-radius" class="headerlink" title="SD step &gt;= radius"></a>SD step &gt;= radius</h3><p>当GN step和SD step都在信赖区域外时，本轮迭代的step为SD step与信赖区域的交点</p>
+<div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/6.png">
+</div>
+
+<h3 id="Other-case"><a href="#Other-case" class="headerlink" title="Other case"></a>Other case</h3><p>当GN step在信赖区域外，SD step在信赖区域内时，本轮迭代的step为<strong>GN step和SD step的连线与信赖区域的交点</strong></p>
+<div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/7.png">
+</div>
+
+<p>这种情况最终的step实际是GN step和SD step的插值点，求解方法如下，核心方法是解关于插值系数<script type="math/tex">\beta</script>的一元二次方程</p>
+<div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/8.png">
+</div>
+
+<p>没有搞明白式(3.20b)中为什么要分c大于等于0和小于0两种情况来考虑，本质上式中两种情况下的解的形式是相同的</p>
+<h2 id="信赖区域的半径更新策略"><a href="#信赖区域的半径更新策略" class="headerlink" title="信赖区域的半径更新策略"></a>信赖区域的半径更新策略</h2><div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/9.png">
+</div>
+
+<div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/10.png">
+</div>
+
+<h2 id="算法流程"><a href="#算法流程" class="headerlink" title="算法流程"></a>算法流程</h2><div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/11.png">
+</div>
+
+<h1 id="ceres实现"><a href="#ceres实现" class="headerlink" title="ceres实现"></a>ceres实现</h1><p>ceres中实现信赖区域法算法整体框架的类是<strong>TrustRegionMinimizer</strong>，提供了两个类<strong>DoglegStrategy</strong>，<strong>LevenbergMarquardtStrategy</strong>分别完成DogLeg以及LM中步长的求解以及信赖区域的更新</p>
+<div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/12.png">
+</div>
+
+<h2 id="信赖区域法的主要流程"><a href="#信赖区域法的主要流程" class="headerlink" title="信赖区域法的主要流程"></a>信赖区域法的主要流程</h2><p>ceres中信赖区域法的主要实现位于<strong>TrustRegionMinimizer::Minimize</strong><br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 判断算法是否收敛或者要进行下一步迭代，停止迭代的情况为</span></span><br><span class="line"><span class="comment">// 1. 达到限定的时间max_solver_time_in_seconds, 默认值为1e6</span></span><br><span class="line"><span class="comment">// 2. 达到限定的迭代次数max_num_iterations，默认值为50</span></span><br><span class="line"><span class="comment">// 3. 梯度g的无穷范数小于阀值gradient_tolerance, 默认值为1e-10</span></span><br><span class="line"><span class="comment">// 4. 信赖区域半径小于阀值min_trust_region_radius，默认值为1e-32</span></span><br><span class="line"><span class="keyword">while</span> (<span class="built_in">FinalizeIterationAndCheckIfMinimizerCanContinue</span>()) &#123;</span><br><span class="line">  iteration_start_time_in_secs_ = <span class="built_in">WallTimeInSeconds</span>();</span><br><span class="line">  iteration_summary_ = <span class="built_in">IterationSummary</span>();</span><br><span class="line">  iteration_summary_.iteration =</span><br><span class="line">      solver_summary-&gt;iterations.<span class="built_in">back</span>().iteration + <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 计算本轮迭代的下降方向</span></span><br><span class="line">  <span class="built_in">RETURN_IF_ERROR_AND_LOG</span>(<span class="built_in">ComputeTrustRegionStep</span>());</span><br><span class="line">  <span class="keyword">if</span> (!iteration_summary_.step_is_valid) &#123;</span><br><span class="line"><span class="comment">// 如果本轮迭代无效，重新计算信赖区域的半径</span></span><br><span class="line">    <span class="built_in">RETURN_IF_ERROR_AND_LOG</span>(<span class="built_in">HandleInvalidStep</span>());</span><br><span class="line">    <span class="keyword">continue</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (options_.is_constrained) &#123;</span><br><span class="line">    <span class="comment">// Use a projected line search to enforce the bounds constraints</span></span><br><span class="line">    <span class="comment">// and improve the quality of the step.</span></span><br><span class="line">    <span class="built_in">DoLineSearch</span>(x_, gradient_, x_cost_, &amp;delta_);</span><br><span class="line">  &#125;</span><br><span class="line"><span class="comment">// 计算 candidate_x_ = Plus(x_, delta_) 以及 candidate_cost_</span></span><br><span class="line">  <span class="built_in">ComputeCandidatePointAndEvaluateCost</span>();</span><br><span class="line">  <span class="built_in">DoInnerIterationsIfNeeded</span>();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 当||candidate_x_- x_||小于阀值即收敛</span></span><br><span class="line">  <span class="keyword">if</span> (<span class="built_in">ParameterToleranceReached</span>()) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 当目标函数的下降量小于阀值即认为收敛</span></span><br><span class="line">  <span class="keyword">if</span> (<span class="built_in">FunctionToleranceReached</span>()) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"><span class="comment">// 计算gain radio, relative decrease要大于min_relative_decrease(1e-3)</span></span><br><span class="line">  <span class="keyword">if</span> (<span class="built_in">IsStepSuccessful</span>()) &#123;</span><br><span class="line"><span class="comment">// 重新evaluate并扩大信赖区域半径</span></span><br><span class="line">    <span class="built_in">RETURN_IF_ERROR_AND_LOG</span>(<span class="built_in">HandleSuccessfulStep</span>());</span><br><span class="line">    <span class="keyword">continue</span>;</span><br><span class="line">  &#125;</span><br><span class="line"><span class="comment">// 缩小信赖区域半径</span></span><br><span class="line">  <span class="built_in">HandleUnsuccessfulStep</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="step计算流程"><a href="#step计算流程" class="headerlink" title="step计算流程"></a>step计算流程</h2><p><strong>ComputeStep</strong>是Dogleg算法的核心，主要功能是计算SD step, GN step以及DL step</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// If the reuse_ flag is not set, then the Cauchy point (scaled</span></span><br><span class="line"><span class="comment">// gradient) and the new Gauss-Newton step are computed from</span></span><br><span class="line"><span class="comment">// scratch. The Dogleg step is then computed as interpolation of these</span></span><br><span class="line"><span class="comment">// two vectors.</span></span><br><span class="line"><span class="function">TrustRegionStrategy::Summary <span class="title">DoglegStrategy::ComputeStep</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="keyword">const</span> TrustRegionStrategy::PerSolveOptions&amp; per_solve_options,</span></span></span><br><span class="line"><span class="params"><span class="function">    SparseMatrix* jacobian,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="keyword">const</span> <span class="keyword">double</span>* residuals,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="keyword">double</span>* step)</span> </span>&#123;</span><br><span class="line">  <span class="built_in">CHECK_NOTNULL</span>(jacobian);</span><br><span class="line">  <span class="built_in">CHECK_NOTNULL</span>(residuals);</span><br><span class="line">  <span class="built_in">CHECK_NOTNULL</span>(step);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> n = jacobian-&gt;<span class="built_in">num_cols</span>();</span><br><span class="line">  <span class="keyword">if</span> (reuse_) &#123;</span><br><span class="line">    <span class="comment">// Gauss-Newton and gradient vectors are always available, only a</span></span><br><span class="line">    <span class="comment">// new interpolant need to be computed. For the subspace case,</span></span><br><span class="line">    <span class="comment">// the subspace and the two-dimensional model are also still valid.</span></span><br><span class="line">    <span class="built_in"><span class="keyword">switch</span></span> (dogleg_type_) &#123;</span><br><span class="line">      <span class="keyword">case</span> TRADITIONAL_DOGLEG:</span><br><span class="line">        <span class="built_in">ComputeTraditionalDoglegStep</span>(step);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">case</span> SUBSPACE_DOGLEG:</span><br><span class="line">        <span class="built_in">ComputeSubspaceDoglegStep</span>(step);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    TrustRegionStrategy::Summary summary;</span><br><span class="line">    summary.num_iterations = <span class="number">0</span>;</span><br><span class="line">    summary.termination_type = LINEAR_SOLVER_SUCCESS;</span><br><span class="line">    <span class="keyword">return</span> summary;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  reuse_ = <span class="literal">true</span>;</span><br><span class="line">  <span class="comment">// Check that we have the storage needed to hold the various</span></span><br><span class="line">  <span class="comment">// temporary vectors.</span></span><br><span class="line">  <span class="keyword">if</span> (diagonal_.<span class="built_in">rows</span>() != n) &#123;</span><br><span class="line">    diagonal_.<span class="built_in">resize</span>(n, <span class="number">1</span>);</span><br><span class="line">    gradient_.<span class="built_in">resize</span>(n, <span class="number">1</span>);</span><br><span class="line">    gauss_newton_step_.<span class="built_in">resize</span>(n, <span class="number">1</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Vector used to form the diagonal matrix that is used to</span></span><br><span class="line">  <span class="comment">// regularize the Gauss-Newton solve and that defines the</span></span><br><span class="line">  <span class="comment">// elliptical trust region</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">//   || D * step || &lt;= radius_ .</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  jacobian-&gt;<span class="built_in">SquaredColumnNorm</span>(diagonal_.<span class="built_in">data</span>());</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">    diagonal_[i] = std::<span class="built_in">min</span>(std::<span class="built_in">max</span>(diagonal_[i], min_diagonal_),</span><br><span class="line">                            max_diagonal_);</span><br><span class="line">  &#125;</span><br><span class="line">  diagonal_ = diagonal_.<span class="built_in">array</span>().<span class="built_in">sqrt</span>();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 计算梯度 g = J^Tf</span></span><br><span class="line">  <span class="built_in">ComputeGradient</span>(jacobian, residuals);</span><br><span class="line"><span class="comment">// 计算最速下降法的步长</span></span><br><span class="line">  <span class="built_in">ComputeCauchyPoint</span>(jacobian);</span><br><span class="line"></span><br><span class="line">  LinearSolver::Summary linear_solver_summary =</span><br><span class="line">      <span class="built_in">ComputeGaussNewtonStep</span>(per_solve_options, jacobian, residuals);</span><br><span class="line"></span><br><span class="line">  TrustRegionStrategy::Summary summary;</span><br><span class="line">  summary.residual_norm = linear_solver_summary.residual_norm;</span><br><span class="line">  summary.num_iterations = linear_solver_summary.num_iterations;</span><br><span class="line">  summary.termination_type = linear_solver_summary.termination_type;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (linear_solver_summary.termination_type == LINEAR_SOLVER_FATAL_ERROR) &#123;</span><br><span class="line">    <span class="keyword">return</span> summary;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (linear_solver_summary.termination_type != LINEAR_SOLVER_FAILURE) &#123;</span><br><span class="line">    <span class="built_in"><span class="keyword">switch</span></span> (dogleg_type_) &#123;</span><br><span class="line">      <span class="comment">// Interpolate the Cauchy point and the Gauss-Newton step.</span></span><br><span class="line">      <span class="keyword">case</span> TRADITIONAL_DOGLEG:</span><br><span class="line">        <span class="built_in">ComputeTraditionalDoglegStep</span>(step);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// Find the minimum in the subspace defined by the</span></span><br><span class="line">      <span class="comment">// Cauchy point and the (Gauss-)Newton step.</span></span><br><span class="line">      <span class="keyword">case</span> SUBSPACE_DOGLEG:</span><br><span class="line">        <span class="keyword">if</span> (!<span class="built_in">ComputeSubspaceModel</span>(jacobian)) &#123;</span><br><span class="line">          summary.termination_type = LINEAR_SOLVER_FAILURE;</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">ComputeSubspaceDoglegStep</span>(step);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> summary;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="计算SD-step"><a href="#计算SD-step" class="headerlink" title="计算SD step"></a>计算SD step</h3><p>需要注意的是，梯度和SD step要通过与<script type="math/tex">J^TJ</script>进行element-wise的除法实现各个维度的rescale<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// The trust region is assumed to be elliptical with the</span></span><br><span class="line"><span class="comment">// diagonal scaling matrix D defined by sqrt(diagonal_).</span></span><br><span class="line"><span class="comment">// It is implemented by substituting step&#x27; = D * step.</span></span><br><span class="line"><span class="comment">// The trust region for step&#x27; is spherical.</span></span><br><span class="line"><span class="comment">// The gradient, the Gauss-Newton step, the Cauchy point,</span></span><br><span class="line"><span class="comment">// and all calculations involving the Jacobian have to</span></span><br><span class="line"><span class="comment">// be adjusted accordingly.</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DoglegStrategy::ComputeGradient</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    SparseMatrix* jacobian,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="keyword">const</span> <span class="keyword">double</span>* residuals)</span> </span>&#123;</span><br><span class="line">  gradient_.<span class="built_in">setZero</span>();</span><br><span class="line">  jacobian-&gt;<span class="built_in">LeftMultiply</span>(residuals, gradient_.<span class="built_in">data</span>());</span><br><span class="line">  gradient_.<span class="built_in">array</span>() /= diagonal_.<span class="built_in">array</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// The Cauchy point is the global minimizer of the quadratic model</span></span><br><span class="line"><span class="comment">// along the one-dimensional subspace spanned by the gradient.</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DoglegStrategy::ComputeCauchyPoint</span><span class="params">(SparseMatrix* jacobian)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// alpha * -gradient is the Cauchy point.</span></span><br><span class="line">  <span class="function">Vector <span class="title">Jg</span><span class="params">(jacobian-&gt;num_rows())</span></span>;</span><br><span class="line">  Jg.<span class="built_in">setZero</span>();</span><br><span class="line">  <span class="comment">// The Jacobian is scaled implicitly by computing J * (D^-1 * (D^-1 * g))</span></span><br><span class="line">  <span class="comment">// instead of (J * D^-1) * (D^-1 * g).</span></span><br><span class="line">  Vector scaled_gradient =</span><br><span class="line">      (gradient_.<span class="built_in">array</span>() / diagonal_.<span class="built_in">array</span>()).<span class="built_in">matrix</span>();</span><br><span class="line">  jacobian-&gt;<span class="built_in">RightMultiply</span>(scaled_gradient.<span class="built_in">data</span>(), Jg.<span class="built_in">data</span>());</span><br><span class="line">  alpha_ = gradient_.<span class="built_in">squaredNorm</span>() / Jg.<span class="built_in">squaredNorm</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="计算GN-step"><a href="#计算GN-step" class="headerlink" title="计算GN step"></a>计算GN step</h3><p>为了改善GN法的数值稳定性，ceres在计算GN step的过程中，参照LM算法增加了阻尼项，其中对角矩阵<script type="math/tex">D</script>是<script type="math/tex">\mu J^TJ</script>的平方根<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// This option only makes sense for unsymmetric linear solvers</span></span><br><span class="line"><span class="comment">// that can solve rectangular linear systems.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// Given a matrix A, an optional diagonal matrix D as a vector,</span></span><br><span class="line"><span class="comment">// and a vector b, the linear solver will solve for</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">//   | A | x = | b |</span></span><br><span class="line"><span class="comment">//   | D |     | 0 |</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// If D is null, then it is treated as zero, and the solver returns</span></span><br><span class="line"><span class="comment">// the solution</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">//   A x = b</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// In either case, x is the vector that solves the following</span></span><br><span class="line"><span class="comment">// optimization problem.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">//   arg min_x ||Ax - b||^2 + ||Dx||^2</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// Here A is a matrix of size m x n, with full column rank. If A</span></span><br><span class="line"><span class="comment">// does not have full column rank, the results returned by the</span></span><br><span class="line"><span class="comment">// solver cannot be relied on. D, if it is not null is an array of</span></span><br><span class="line"><span class="comment">// size n.  b is an array of size m and x is an array of size n.</span></span><br><span class="line"><span class="keyword">double</span> * D;</span><br></pre></td></tr></table></figure></p>
+<p>GN step的计算过程如下<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">LinearSolver::Summary <span class="title">DoglegStrategy::ComputeGaussNewtonStep</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="keyword">const</span> PerSolveOptions&amp; per_solve_options,</span></span></span><br><span class="line"><span class="params"><span class="function">    SparseMatrix* jacobian,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="keyword">const</span> <span class="keyword">double</span>* residuals)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> n = jacobian-&gt;<span class="built_in">num_cols</span>();</span><br><span class="line">  LinearSolver::Summary linear_solver_summary;</span><br><span class="line">  linear_solver_summary.termination_type = LINEAR_SOLVER_FAILURE;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// The Jacobian matrix is often quite poorly conditioned. Thus it is</span></span><br><span class="line">  <span class="comment">// necessary to add a diagonal matrix at the bottom to prevent the</span></span><br><span class="line">  <span class="comment">// linear solver from failing.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// We do this by computing the same diagonal matrix as the one used</span></span><br><span class="line">  <span class="comment">// by Levenberg-Marquardt (other choices are possible), and scaling</span></span><br><span class="line">  <span class="comment">// it by a small constant (independent of the trust region radius).</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// If the solve fails, the multiplier to the diagonal is increased</span></span><br><span class="line">  <span class="comment">// up to max_mu_ by a factor of mu_increase_factor_ every time. If</span></span><br><span class="line">  <span class="comment">// the linear solver is still not successful, the strategy returns</span></span><br><span class="line">  <span class="comment">// with LINEAR_SOLVER_FAILURE.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// Next time when a new Gauss-Newton step is requested, the</span></span><br><span class="line">  <span class="comment">// multiplier starts out from the last successful solve.</span></span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">  <span class="comment">// When a step is declared successful, the multiplier is decreased</span></span><br><span class="line">  <span class="comment">// by half of mu_increase_factor_.</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (mu_ &lt; max_mu_) &#123;</span><br><span class="line">    <span class="comment">// Dogleg, as far as I (sameeragarwal) understand it, requires a</span></span><br><span class="line">    <span class="comment">// reasonably good estimate of the Gauss-Newton step. This means</span></span><br><span class="line">    <span class="comment">// that we need to solve the normal equations more or less</span></span><br><span class="line">    <span class="comment">// exactly. This is reflected in the values of the tolerances set</span></span><br><span class="line">    <span class="comment">// below.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// For now, this strategy should only be used with exact</span></span><br><span class="line">    <span class="comment">// factorization based solvers, for which these tolerances are</span></span><br><span class="line">    <span class="comment">// automatically satisfied.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// The right way to combine inexact solves with trust region</span></span><br><span class="line">    <span class="comment">// methods is to use Stiehaug&#x27;s method.</span></span><br><span class="line">    LinearSolver::PerSolveOptions solve_options;</span><br><span class="line">    solve_options.q_tolerance = <span class="number">0.0</span>;</span><br><span class="line">    solve_options.r_tolerance = <span class="number">0.0</span>;</span><br><span class="line"></span><br><span class="line">    lm_diagonal_ = diagonal_ * std::<span class="built_in">sqrt</span>(mu_);</span><br><span class="line">    solve_options.D = lm_diagonal_.<span class="built_in">data</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// As in the LevenbergMarquardtStrategy, solve Jy = r instead</span></span><br><span class="line">    <span class="comment">// of Jx = -r and later set x = -y to avoid having to modify</span></span><br><span class="line">    <span class="comment">// either jacobian or residuals.</span></span><br><span class="line">    <span class="built_in">InvalidateArray</span>(n, gauss_newton_step_.<span class="built_in">data</span>());</span><br><span class="line">    linear_solver_summary = linear_solver_-&gt;<span class="built_in">Solve</span>(jacobian,</span><br><span class="line">                                                  residuals,</span><br><span class="line">                                                  solve_options,</span><br><span class="line">                                                  gauss_newton_step_.<span class="built_in">data</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (per_solve_options.dump_format_type == CONSOLE ||</span><br><span class="line">        (per_solve_options.dump_format_type != CONSOLE &amp;&amp;</span><br><span class="line">         !per_solve_options.dump_filename_base.<span class="built_in">empty</span>())) &#123;</span><br><span class="line">      <span class="keyword">if</span> (!<span class="built_in">DumpLinearLeastSquaresProblem</span>(per_solve_options.dump_filename_base,</span><br><span class="line">                                         per_solve_options.dump_format_type,</span><br><span class="line">                                         jacobian,</span><br><span class="line">                                         solve_options.D,</span><br><span class="line">                                         residuals,</span><br><span class="line">                                         gauss_newton_step_.<span class="built_in">data</span>(),</span><br><span class="line">                                         <span class="number">0</span>)) &#123;</span><br><span class="line">        <span class="built_in">LOG</span>(ERROR) &lt;&lt; <span class="string">&quot;Unable to dump trust region problem.&quot;</span></span><br><span class="line">                   &lt;&lt; <span class="string">&quot; Filename base: &quot;</span></span><br><span class="line">                   &lt;&lt; per_solve_options.dump_filename_base;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (linear_solver_summary.termination_type == LINEAR_SOLVER_FATAL_ERROR) &#123;</span><br><span class="line">      <span class="keyword">return</span> linear_solver_summary;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (linear_solver_summary.termination_type == LINEAR_SOLVER_FAILURE ||</span><br><span class="line">        !<span class="built_in">IsArrayValid</span>(n, gauss_newton_step_.<span class="built_in">data</span>())) &#123;</span><br><span class="line">      mu_ *= mu_increase_factor_;</span><br><span class="line">      <span class="built_in">VLOG</span>(<span class="number">2</span>) &lt;&lt; <span class="string">&quot;Increasing mu &quot;</span> &lt;&lt; mu_;</span><br><span class="line">      linear_solver_summary.termination_type = LINEAR_SOLVER_FAILURE;</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (linear_solver_summary.termination_type != LINEAR_SOLVER_FAILURE) &#123;</span><br><span class="line">    <span class="comment">// The scaled Gauss-Newton step is D * GN:</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">//     - (D^-1 J^T J D^-1)^-1 (D^-1 g)</span></span><br><span class="line">    <span class="comment">//   = - D (J^T J)^-1 D D^-1 g</span></span><br><span class="line">    <span class="comment">//   = D -(J^T J)^-1 g</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    gauss_newton_step_.<span class="built_in">array</span>() *= -diagonal_.<span class="built_in">array</span>();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> linear_solver_summary;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="计算DogLeg-step"><a href="#计算DogLeg-step" class="headerlink" title="计算DogLeg step"></a>计算DogLeg step</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// The dogleg step is defined as the intersection of the trust region</span></span><br><span class="line"><span class="comment">// boundary with the piecewise linear path from the origin to the Cauchy</span></span><br><span class="line"><span class="comment">// point and then from there to the Gauss-Newton point (global minimizer</span></span><br><span class="line"><span class="comment">// of the model function). The Gauss-Newton point is taken if it lies</span></span><br><span class="line"><span class="comment">// within the trust region.</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DoglegStrategy::ComputeTraditionalDoglegStep</span><span class="params">(<span class="keyword">double</span>* dogleg)</span> </span>&#123;</span><br><span class="line">  <span class="function">VectorRef <span class="title">dogleg_step</span><span class="params">(dogleg, gradient_.rows())</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Case 1. The Gauss-Newton step lies inside the trust region, and</span></span><br><span class="line">  <span class="comment">// is therefore the optimal solution to the trust-region problem.</span></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">double</span> gradient_norm = gradient_.<span class="built_in">norm</span>();</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">double</span> gauss_newton_norm = gauss_newton_step_.<span class="built_in">norm</span>();</span><br><span class="line">  <span class="keyword">if</span> (gauss_newton_norm &lt;= radius_) &#123;</span><br><span class="line">    dogleg_step = gauss_newton_step_;</span><br><span class="line">    dogleg_step_norm_ = gauss_newton_norm;</span><br><span class="line">    dogleg_step.<span class="built_in">array</span>() /= diagonal_.<span class="built_in">array</span>();</span><br><span class="line">    <span class="built_in">VLOG</span>(<span class="number">3</span>) &lt;&lt; <span class="string">&quot;GaussNewton step size: &quot;</span> &lt;&lt; dogleg_step_norm_</span><br><span class="line">            &lt;&lt; <span class="string">&quot; radius: &quot;</span> &lt;&lt; radius_;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Case 2. The Cauchy point and the Gauss-Newton steps lie outside</span></span><br><span class="line">  <span class="comment">// the trust region. Rescale the Cauchy point to the trust region</span></span><br><span class="line">  <span class="comment">// and return.</span></span><br><span class="line">  <span class="keyword">if</span>  (gradient_norm * alpha_ &gt;= radius_) &#123;</span><br><span class="line">    dogleg_step = -(radius_ / gradient_norm) * gradient_;</span><br><span class="line">    dogleg_step_norm_ = radius_;</span><br><span class="line">    dogleg_step.<span class="built_in">array</span>() /= diagonal_.<span class="built_in">array</span>();</span><br><span class="line">    <span class="built_in">VLOG</span>(<span class="number">3</span>) &lt;&lt; <span class="string">&quot;Cauchy step size: &quot;</span> &lt;&lt; dogleg_step_norm_</span><br><span class="line">            &lt;&lt; <span class="string">&quot; radius: &quot;</span> &lt;&lt; radius_;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Case 3. The Cauchy point is inside the trust region and the</span></span><br><span class="line">  <span class="comment">// Gauss-Newton step is outside. Compute the line joining the two</span></span><br><span class="line">  <span class="comment">// points and the point on it which intersects the trust region</span></span><br><span class="line">  <span class="comment">// boundary.</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// a = alpha * -gradient</span></span><br><span class="line">  <span class="comment">// b = gauss_newton_step</span></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">double</span> b_dot_a = -alpha_ * gradient_.<span class="built_in">dot</span>(gauss_newton_step_);</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">double</span> a_squared_norm = <span class="built_in">pow</span>(alpha_ * gradient_norm, <span class="number">2.0</span>);</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">double</span> b_minus_a_squared_norm =</span><br><span class="line">      a_squared_norm - <span class="number">2</span> * b_dot_a + <span class="built_in">pow</span>(gauss_newton_norm, <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// c = a&#x27; (b - a)</span></span><br><span class="line">  <span class="comment">//   = alpha * -gradient&#x27; gauss_newton_step - alpha^2 |gradient|^2</span></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">double</span> c = b_dot_a - a_squared_norm;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">double</span> d = <span class="built_in">sqrt</span>(c * c + b_minus_a_squared_norm *</span><br><span class="line">                        (<span class="built_in">pow</span>(radius_, <span class="number">2.0</span>) - a_squared_norm));</span><br><span class="line"></span><br><span class="line">  <span class="keyword">double</span> beta =</span><br><span class="line">      (c &lt;= <span class="number">0</span>)</span><br><span class="line">      ? (d - c) /  b_minus_a_squared_norm</span><br><span class="line">      : (radius_ * radius_ - a_squared_norm) / (d + c);</span><br><span class="line">  dogleg_step = (-alpha_ * (<span class="number">1.0</span> - beta)) * gradient_</span><br><span class="line">      + beta * gauss_newton_step_;</span><br><span class="line">  dogleg_step_norm_ = dogleg_step.<span class="built_in">norm</span>();</span><br><span class="line">  dogleg_step.<span class="built_in">array</span>() /= diagonal_.<span class="built_in">array</span>();</span><br><span class="line">  <span class="built_in">VLOG</span>(<span class="number">3</span>) &lt;&lt; <span class="string">&quot;Dogleg step size: &quot;</span> &lt;&lt; dogleg_step_norm_</span><br><span class="line">          &lt;&lt; <span class="string">&quot; radius: &quot;</span> &lt;&lt; radius_;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="信赖区域半径的调整"><a href="#信赖区域半径的调整" class="headerlink" title="信赖区域半径的调整"></a>信赖区域半径的调整</h2><h3 id="step不合法"><a href="#step不合法" class="headerlink" title="step不合法"></a>step不合法</h3><p>当<script type="math/tex">L(0)-L(h) <= 0</script>，即计算的step不能使cost下降时，当前step是不合法的，此时<strong>不改变信赖区域的半径，而是迅速增大计算GN step中的阻尼因子</strong>进行下一轮迭代<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DoglegStrategy::StepIsInvalid</span><span class="params">()</span> </span>&#123;</span><br><span class="line"><span class="comment">// mu_increase_factor_默认是10</span></span><br><span class="line">  mu_ *= mu_increase_factor_;</span><br><span class="line">  reuse_ = <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这一点与LM算法是不同的，<strong>LM算法在检测到step不合法时，会缩小信赖区域的半径</strong><br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LevenbergMarquardtStrategy</span> :</span> <span class="keyword">public</span> TrustRegionStrategy &#123;</span><br><span class="line"><span class="comment">//...</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">StepIsInvalid</span><span class="params">()</span> </span>&#123;</span><br><span class="line">      <span class="comment">// Treat the current step as a rejected step with no increase in</span></span><br><span class="line">      <span class="comment">// solution quality. Since rejected steps lead to decrease in the</span></span><br><span class="line">      <span class="comment">// size of the trust region, the next time ComputeStep is called,</span></span><br><span class="line">      <span class="comment">// this will lead to a better conditioned system.</span></span><br><span class="line">      <span class="built_in">StepRejected</span>(<span class="number">0.0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">LevenbergMarquardtStrategy::StepRejected</span><span class="params">(<span class="keyword">double</span> step_quality)</span> </span>&#123;</span><br><span class="line">  radius_ = radius_ / decrease_factor_;</span><br><span class="line">  decrease_factor_ *= <span class="number">2.0</span>;</span><br><span class="line">  reuse_diagonal_ = <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="step合法"><a href="#step合法" class="headerlink" title="step合法"></a>step合法</h3><p>当step合法时，根据gain radio的值调整信赖区域的半径以及阻尼因子<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DoglegStrategy::StepAccepted</span><span class="params">(<span class="keyword">double</span> step_quality)</span> </span>&#123;</span><br><span class="line">  <span class="built_in">CHECK_GT</span>(step_quality, <span class="number">0.0</span>);</span><br><span class="line"><span class="comment">// decrease_threshold_默认为0.25</span></span><br><span class="line">  <span class="keyword">if</span> (step_quality &lt; decrease_threshold_) &#123;</span><br><span class="line">    radius_ *= <span class="number">0.5</span>;</span><br><span class="line">  &#125;</span><br><span class="line"><span class="comment">// increase_threshold_默认为0.75</span></span><br><span class="line">  <span class="keyword">if</span> (step_quality &gt; increase_threshold_) &#123;</span><br><span class="line">    radius_ = std::<span class="built_in">max</span>(radius_, <span class="number">3.0</span> * dogleg_step_norm_);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Reduce the regularization multiplier, in the hope that whatever</span></span><br><span class="line">  <span class="comment">// was causing the rank deficiency has gone away and we can return</span></span><br><span class="line">  <span class="comment">// to doing a pure Gauss-Newton solve.</span></span><br><span class="line"><span class="comment">// 减小阻尼因子</span></span><br><span class="line">  mu_ = std::<span class="built_in">max</span>(min_mu_, <span class="number">2.0</span> * mu_ / mu_increase_factor_);</span><br><span class="line">  reuse_ = <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DoglegStrategy::StepRejected</span><span class="params">(<span class="keyword">double</span> step_quality)</span> </span>&#123;</span><br><span class="line"><span class="comment">// 信赖区域的半径</span></span><br><span class="line">  radius_ *= <span class="number">0.5</span>;</span><br><span class="line">  reuse_ = <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="关于linear-solver的选取"><a href="#关于linear-solver的选取" class="headerlink" title="关于linear solver的选取"></a>关于linear solver的选取</h2><p>ceres中的linear solver主要分为基于矩阵分解的精确linear solver以及基于迭代的非精确linear solver，在DogLeg算法中，需要求解的GN step足够精确，因此<strong>ceres中使用DogLeg时必须使用基于矩阵分解的精确步长solver</strong></p>
+<div align="center">
+<img src="/all_images/DogLeg原理与ceres实现/13.png">
+</div>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="http://www2.imm.dtu.dk/pubdb/edoc/imm3215.pdf">Methods for non-linear least squares problems</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="http://ceres-solver.org/nnls_solving.html#dogleg">ceres官方文档</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/lusongno1/article/details/80558684">信赖域狗腿(dogleg)方法_陆嵩的博客-CSDN博客_dogleg算法</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Ceres/" rel="tag"># Ceres</a>
+              <a href="/tags/%E9%9D%9E%E7%BA%BF%E6%80%A7%E4%BC%98%E5%8C%96/" rel="tag"># 非线性优化</a>
+              <a href="/tags/DogLeg/" rel="tag"># DogLeg</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/09/09/Ceres-jacobian-and-hessian-evaluation/" rel="prev" title="Ceres jacobian and hessian evaluation">
+      <i class="fa fa-chevron-left"></i> Ceres jacobian and hessian evaluation
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Gauss-Newton-GN-step"><span class="nav-number">2.1.</span> <span class="nav-text">Gauss-Newton(GN) step</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Steepest-descent-SD-step"><span class="nav-number">2.2.</span> <span class="nav-text">Steepest descent(SD) step</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DogLeg-DL-step"><span class="nav-number">2.3.</span> <span class="nav-text">DogLeg(DL) step</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#GN-step-lt-radius"><span class="nav-number">2.3.1.</span> <span class="nav-text">GN step &lt;&#x3D; radius</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SD-step-gt-radius"><span class="nav-number">2.3.2.</span> <span class="nav-text">SD step &gt;&#x3D; radius</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Other-case"><span class="nav-number">2.3.3.</span> <span class="nav-text">Other case</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%A1%E8%B5%96%E5%8C%BA%E5%9F%9F%E7%9A%84%E5%8D%8A%E5%BE%84%E6%9B%B4%E6%96%B0%E7%AD%96%E7%95%A5"><span class="nav-number">2.4.</span> <span class="nav-text">信赖区域的半径更新策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E6%B5%81%E7%A8%8B"><span class="nav-number">2.5.</span> <span class="nav-text">算法流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ceres%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">ceres实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%A1%E8%B5%96%E5%8C%BA%E5%9F%9F%E6%B3%95%E7%9A%84%E4%B8%BB%E8%A6%81%E6%B5%81%E7%A8%8B"><span class="nav-number">3.1.</span> <span class="nav-text">信赖区域法的主要流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#step%E8%AE%A1%E7%AE%97%E6%B5%81%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">step计算流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97SD-step"><span class="nav-number">3.2.1.</span> <span class="nav-text">计算SD step</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97GN-step"><span class="nav-number">3.2.2.</span> <span class="nav-text">计算GN step</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97DogLeg-step"><span class="nav-number">3.2.3.</span> <span class="nav-text">计算DogLeg step</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%A1%E8%B5%96%E5%8C%BA%E5%9F%9F%E5%8D%8A%E5%BE%84%E7%9A%84%E8%B0%83%E6%95%B4"><span class="nav-number">3.3.</span> <span class="nav-text">信赖区域半径的调整</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#step%E4%B8%8D%E5%90%88%E6%B3%95"><span class="nav-number">3.3.1.</span> <span class="nav-text">step不合法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#step%E5%90%88%E6%B3%95"><span class="nav-number">3.3.2.</span> <span class="nav-text">step合法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E4%BA%8Elinear-solver%E7%9A%84%E9%80%89%E5%8F%96"><span class="nav-number">3.4.</span> <span class="nav-text">关于linear solver的选取</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="vitalemonate"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">vitalemonate</p>
+  <div class="site-description" itemprop="description">Ideas don't come out of thin air</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">44</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/vitalemonate" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;vitalemonate" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/952070377@qq.com" title="E-Mail → 952070377@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">vitalemonate</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'WXYIx5XRBQI0dHgsV4ppd4xj-MdYXbMMI',
+      appKey     : 'xufQBscNKTzWCqkruodkqjSd',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
