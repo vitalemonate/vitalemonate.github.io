@@ -255,221 +255,6 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/19/0Lecture-Lie%20theory%20for%20the%20roboticist/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="vitalemonate">
-      <meta itemprop="description" content="Ideas don't come out of thin air">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Now or never">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/12/19/0Lecture-Lie%20theory%20for%20the%20roboticist/" class="post-title-link" itemprop="url">未命名</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2022-12-19 20:35:18 / 修改时间：20:06:52" itemprop="dateCreated datePublished" datetime="2022-12-19T20:35:18+08:00">2022-12-19</time>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2022/12/19/0Lecture-Lie%20theory%20for%20the%20roboticist/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2022/12/19/0Lecture-Lie%20theory%20for%20the%20roboticist/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="Lecture-Lie-theory-for-the-roboticist"><a href="#Lecture-Lie-theory-for-the-roboticist" class="headerlink" title="Lecture-Lie theory for the roboticist"></a>Lecture-Lie theory for the roboticist</h1><p>本文是学习 Joan Sola 在 <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=nHOcoIyJj2o">2020</a> 年和 <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=csolG83gCV8">2022</a> 年的 Robotics &amp; AI Summer School 的 lecture 的笔记，二者的内容基本相同，下文的截图主要基于 2022 年最新的 lecture，也有少量截图来自 2020 年的 lecture。此外，本 lecture 主要的参考文档为 Joan Sola 的著作 <a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1812.01537.pdf">A micro Lie theory for state estimation in robotics</a></p>
-<h1 id="Contents"><a href="#Contents" class="headerlink" title="Contents"></a>Contents</h1><p><img src="static/boxcnkcjFomKsMbzTbuIc1YZd7f.png" alt=""></p>
-<h1 id="Examples"><a href="#Examples" class="headerlink" title="Examples"></a>Examples</h1><ul>
-<li><script type="math/tex; mode=display">
-S^1$$：The unit complex numbers(the sphere of the <strong>one dimension)</strong></script></li>
-</ul>
-<p><img src="static/boxcnk1WcG5nwULNaBYOpMTYIue.png" alt=""></p>
-<ul>
-<li><script type="math/tex; mode=display">
-SO(2)$$：2D rotation group(二维特殊正交群)</script></li>
-<li><p>x, y 和 R 属于不同的 set，R 的基是</p>
-<script type="math/tex; mode=display">
-(I,[1]_{\times})</script><p>，而 x, y 的基是</p>
-<script type="math/tex; mode=display">
-(1,0),(0,1)</script></li>
-</ul>
-<p><img src="static/boxcn26fh0NVa0Budrj9WRvj33b.png" alt=""></p>
-<ul>
-<li><script type="math/tex; mode=display">
-S^3$$：The unit quaternions(3-sphere in $$R^4$$)</script></li>
-</ul>
-<p><img src="static/boxcnrXTk04OBsttDIAinmVTF6g.png" alt=""></p>
-<ul>
-<li><script type="math/tex; mode=display">
-SE(2)$$：A pose(rigid transform) in 2-d Euclidean space(二维特殊欧式群)</script></li>
-<li>下图左侧的曲面图并不是精确的，只是一个抽象曲面</li>
-</ul>
-<p><img src="static/boxcneNghQRbh9CwWL8EBXvSB2d.png" alt=""></p>
-<p><img src="static/boxcnK2zs5oQuptcGE1HJCZTpBd.png" alt=""></p>
-<ul>
-<li><script type="math/tex; mode=display">
-SE(3)$$: A pose(rigid transform) in 3-d Euclidean space(三维特殊欧式群)</script></li>
-</ul>
-<p><img src="static/boxcns7DqBP6yPET2vh0LUnLzN5.png" alt=""></p>
-<h1 id="Why-Lie-Groups"><a href="#Why-Lie-Groups" class="headerlink" title="Why Lie Groups"></a>Why Lie Groups</h1><p><img src="static/boxcnUezSQ4hjLQFMsQ6gJ2ByJX.png" alt=""></p>
-<p><img src="static/boxcna9lmvYYwIYF4xEHnYHKPMb.png" alt=""></p>
-<h1 id="Lie-Group-definition"><a href="#Lie-Group-definition" class="headerlink" title="Lie Group definition"></a>Lie Group definition</h1><h2 id="Group"><a href="#Group" class="headerlink" title="Group"></a>Group</h2><ul>
-<li>满足 4 个公理的 set 和 operation 构成一个 group</li>
-<li>很多 group 是<strong>不满足交换律</strong>的(<strong>non-commutative</strong>)</li>
-</ul>
-<p><img src="static/boxcnPY3d8yeESeS1u0Qt4ssaPc.png" alt=""></p>
-<h2 id="Manifold"><a href="#Manifold" class="headerlink" title="Manifold"></a>Manifold</h2><ul>
-<li><strong>Wikipage</strong><strong>: 流形</strong>（英语：Manifolds）是<strong>可以局部</strong><strong>欧几里得空间</strong><strong>化</strong>的一个<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%8B%93%E6%89%91%E7%A9%BA%E9%97%B4">拓扑空间</a>，是欧几里得空间中的曲线、曲面等概念的推广。欧几里得空间就是最简单的流形的实例。地球表面这样的球面则是一个稍微复杂的例子。一般的流形可以通过把许多平直的片折弯并粘连而成</li>
-<li>粗略地说，流形是局部看近似线性空间的抽象<strong>曲面（而不是曲面围成的实心部分）</strong></li>
-</ul>
-<h2 id="Lie-Group"><a href="#Lie-Group" class="headerlink" title="Lie Group"></a>Lie Group</h2><ul>
-<li>具有 group 性质的<strong>smooth manifold</strong></li>
-</ul>
-<p><img src="static/boxcnUPnawYwLl6AWOzeFbFqIBh.png" alt=""></p>
-<h2 id="Group-Action"><a href="#Group-Action" class="headerlink" title="Group Action"></a>Group Action</h2><p><img src="static/boxcngcScAYYucEwFUIO5R63yPd.png" alt=""></p>
-<h1 id="The-topology-of-Lie-Theory"><a href="#The-topology-of-Lie-Theory" class="headerlink" title="The topology of Lie Theory"></a>The topology of Lie Theory</h1><ul>
-<li>exactly converts elements of the Lie algebra into elements of the group.<br>The log map is the inverse operation</li>
-</ul>
-<p><img src="static/boxcnUSVyJhUy8IyTaMPYqRWn1f.png" alt=""></p>
-<ul>
-<li>Tangent sapce will cover manifold <strong>multiple times </strong>and the first it covers is the time where the red circle’s radius is pi and it will end up at the <strong>antipode point（对径点）</strong>“</li>
-</ul>
-<p><img src="static/boxcnB5bazXulnTSd6qUsLtCfcf.png" alt=""></p>
-<h1 id="Tangent-space-and-Lie-Algebra"><a href="#Tangent-space-and-Lie-Algebra" class="headerlink" title="Tangent space and Lie Algebra"></a>Tangent space and Lie Algebra</h1><h2 id="Definition"><a href="#Definition" class="headerlink" title="Definition"></a>Definition</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://zh.m.wikipedia.org/zh-hans/%E5%88%87%E7%A9%BA%E9%97%B4">Wiki page</a>: <strong>切空间</strong>（Tangent space）是在某一点所有的<a target="_blank" rel="noopener" href="https://zh.m.wikipedia.org/wiki/%E5%88%87%E5%90%91%E9%87%8F">切向量</a>组成的<a target="_blank" rel="noopener" href="https://zh.m.wikipedia.org/wiki/%E7%BA%BF%E6%80%A7%E7%A9%BA%E9%97%B4">线性空间</a></li>
-<li>由于 manifold 是 smooth 的，因此 manifold 上每个点处的 tangent space 是<strong>唯一的</strong></li>
-<li>tangent space 是向量空间</li>
-<li>tangent space 空间的维度是 manifold 的自由度</li>
-<li>特殊的 tangent space<strong>：</strong>group 上所有点处的 tangent space 是的<strong>结构是相同的(“The manifold has the same structure everywhere”），</strong>比如下图中所有点处的 tangent space 都是二维平面，但各点处的 tangent space<strong>并不是同一个平面(not the same)，称 identity 处的 tangent space 为 lie algebra</strong></li>
-</ul>
-<p><img src="static/boxcnQy93qjwLmvKOQRA2Px84Ff.png" alt=""></p>
-<h2 id="Examples-1"><a href="#Examples-1" class="headerlink" title="Examples"></a>Examples</h2><p><img src="static/boxcnubKpA0RL4oSI5ufpfp5g6b.png" alt=""></p>
-<p><img src="static/boxcn9GkDrWfoexV2aQApGKASkh.png" alt=""></p>
-<h2 id="Lie-algebra-vs-Cartesian-representation"><a href="#Lie-algebra-vs-Cartesian-representation" class="headerlink" title="Lie algebra vs. Cartesian representation"></a>Lie algebra vs. Cartesian representation</h2><ul>
-<li>Tangent space 有两种同构(isomorphism)的表示形式：<strong>Lie algebra 和 Cartesian</strong></li>
-</ul>
-<p><img src="static/boxcnDBnrXW4rnE7GJ6NWKslXbg.png" alt=""></p>
-<p><img src="static/boxcnIHHzjEFvhBpC2liqNip6lf.png" alt=""></p>
-<h1 id="The-Exponential-map"><a href="#The-Exponential-map" class="headerlink" title="The Exponential map"></a>The Exponential map</h1><h2 id="Definition-1"><a href="#Definition-1" class="headerlink" title="Definition"></a>Definition</h2><p><img src="static/boxcnPQmjOCc1tE1NHpUbNWUpnc.png" alt=""></p>
-<h2 id="Examples-2"><a href="#Examples-2" class="headerlink" title="Examples"></a>Examples</h2><ul>
-<li><p>推导思路：根据 manifold 的约束方程，对时间</p>
-<script type="math/tex; mode=display">
-t$$求导，构建</script><p>z$$ 的 ODE 方程，最终得到 lie algebra 到 lie group 的 exponential map</p>
-</li>
-<li>因为整个推导过程没有<strong>近似(approximation)的步骤</strong>，每一步都是精确(exact)的，因此“<strong>exponential map is exact”</strong></li>
-</ul>
-<p><img src="static/boxcnKdOtnMiyyqtIhWvQyonn5d.png" alt=""></p>
-<ul>
-<li><p>根据</p>
-<script type="math/tex; mode=display">
-exp</script><p>的泰勒展开式，可以直观地描述 exponential map 的过程</p>
-</li>
-</ul>
-<p><img src="static/boxcnLBILQZJeGxLcJjKM9W0rUe.png" alt=""></p>
-<p><img src="static/boxcnE8sqmnx6X7ZQI2Hd7dzadY.png" alt=""></p>
-<h2 id="The-capitalized-expoential-map"><a href="#The-capitalized-expoential-map" class="headerlink" title="The capitalized expoential map"></a>The capitalized expoential map</h2><p><img src="static/boxcnI7xrYKmFPf6RCS8wNkSbRc.png" alt=""></p>
-<p><img src="static/boxcnhBBBYCfoOAbeHKkoR8RTFc.png" alt=""></p>
-<h1 id="Plus-and-minus-operators"><a href="#Plus-and-minus-operators" class="headerlink" title="Plus and minus operators"></a>Plus and minus operators</h1><h2 id="Definition-2"><a href="#Definition-2" class="headerlink" title="Definition"></a>Definition</h2><ul>
-<li><script type="math/tex; mode=display">
-\mathcal{X} \oplus \boldsymbol{\omega} $$的结果是group上的元素，而$$\mathcal{Y}\ominus \mathcal{X}$$<strong>是vector</strong></script></li>
-</ul>
-<p><img src="static/boxcnPpCb2LeezuGNjrMaWJQJsg.png" alt=""></p>
-<ul>
-<li>使用 Cartesian 形式的 tangent space 的优势是方便构造 perturbations, errors, increments 以及 jacobians 和 covarians</li>
-</ul>
-<p><img src="static/boxcnQrOcQ4mNW8yVPkBjzNcE6f.png" alt=""></p>
-<h2 id="Left-and-right-plus-and-minus"><a href="#Left-and-right-plus-and-minus" class="headerlink" title="Left and right plus and minus"></a>Left and right plus and minus</h2><ul>
-<li>由于 group 通常<strong>不满足交换律</strong>(<strong>non-commutative</strong>)，因此 left 和 right operator 的结果往往是不同的</li>
-<li><p>当使用 right operator 时，tangent vector 是表示在</p>
-<script type="math/tex; mode=display">
-\mathcal{X}</script><p>点所在的 local reference frame 下的</p>
-</li>
-<li>当使用 left operator 时，tangent vector 是表示在 identity 点所在的 global reference frame 下的</li>
-<li>当 group 满足<strong>交换律时，</strong>二者的结果相同，比如 SO(2)</li>
-</ul>
-<p><img src="static/boxcnRyGPqEOH9YvJhMcGX16uHf.png" alt=""></p>
-<h1 id="The-Adjoint-matrix"><a href="#The-Adjoint-matrix" class="headerlink" title="The Adjoint matrix"></a>The Adjoint matrix</h1><ul>
-<li><p>The adjoint <strong>linearly </strong>and <strong>exactly</strong> transforms <strong>tangent vectors at </strong></p>
-<script type="math/tex; mode=display">
-\chi</script><p>to the tangent space <strong>at the identity</strong></p>
-</li>
-<li><p>当 group 满足<strong>交换律</strong>时，</p>
-<script type="math/tex; mode=display">
-\boldsymbol\sigma</script><p><strong>和</strong></p>
-<script type="math/tex; mode=display">
-\boldsymbol\tau</script><p><strong>相同</strong>，此时</p>
-<script type="math/tex; mode=display">
-\mathbf{Ad}_{\mathcal{X}}=\mathbf{I}</script><p>，一个比较典型的例子就是 SO(2)</p>
-</li>
-</ul>
-<p><img src="static/boxcnnSvzUnV3PArvTDLwPXw0ce.png" alt=""></p>
-<h1 id="Calculus-on-Lie-groups"><a href="#Calculus-on-Lie-groups" class="headerlink" title="Calculus on Lie groups"></a>Calculus on Lie groups</h1><p><img src="static/boxcn8UQL3c538j3zuz166Uwere.png" alt=""></p>
-<h2 id="Jacobians"><a href="#Jacobians" class="headerlink" title="Jacobians"></a>Jacobians</h2><h3 id="Definition-3"><a href="#Definition-3" class="headerlink" title="Definition"></a>Definition</h3><ul>
-<li><p>求导时要注意元素是在 Vector space 在 Lie Group，<strong>vector space</strong>上的加减运算向量的<strong>“+”,  “-“</strong>，<strong>Lie group</strong>上元素的加减运算分别为</p>
-<script type="math/tex; mode=display">
-\oplus</script><p><strong>和</strong></p>
-<script type="math/tex; mode=display">
-\ominus</script></li>
-</ul>
-<p><img src="static/boxcnqBolfNhyPaTVy2LsSZiSwc.png" alt=""></p>
-<h3 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h3><p><img src="static/boxcnjNn1R91TP9Ncrg5Vcz5VJe.png" alt=""></p>
-<h3 id="Graphical-interpretation"><a href="#Graphical-interpretation" class="headerlink" title="Graphical interpretation"></a>Graphical interpretation</h3><p><img src="static/boxcnY8S3auD6egEokTJZPjpsnc.png" alt=""></p>
-<p><img src="static/boxcnjpvrHZC9iUyOWS5pmcDndf.png" alt=""></p>
-<h3 id="Differentiation-rules-on-Lie-groups"><a href="#Differentiation-rules-on-Lie-groups" class="headerlink" title="Differentiation rules on Lie groups"></a>Differentiation rules on Lie groups</h3><p><img src="static/boxcnWS6CkSPLpzs5EfaI3lcyQb.png" alt=""></p>
-<h2 id="Perturbations-on-Lie-groups"><a href="#Perturbations-on-Lie-groups" class="headerlink" title="Perturbations on Lie groups"></a>Perturbations on Lie groups</h2><p><img src="static/boxcnDnvzNIrjne6OwRyukWeHsn.png" alt=""></p>
-<h2 id="Intergration-on-Lie-groups"><a href="#Intergration-on-Lie-groups" class="headerlink" title="Intergration on Lie groups"></a>Intergration on Lie groups</h2><p><img src="static/boxcn2JLR3HRYFCvismMhm8sVlb.png" alt=""></p>
-<h1 id="EKF-map-based-localization"><a href="#EKF-map-based-localization" class="headerlink" title="EKF map-based localization"></a>EKF map-based localization</h1><p><img src="static/boxcneqvwm70h80ScPcCbCgLrDc.png" alt=""></p>
-<p><img src="static/boxcnGFiXHpAgQFKzczd6vwpWih.png" alt=""></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://example.com/2022/09/24/DogLeg%E5%8E%9F%E7%90%86%E4%B8%8Eceres%E5%AE%9E%E7%8E%B0/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1215,6 +1000,101 @@ exp</script><p>的泰勒展开式，可以直观地描述 exponential map 的过
   
   
 
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/02/27/%E5%90%91%E9%87%8F%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9A%84%E6%B1%82%E5%AF%BC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="vitalemonate">
+      <meta itemprop="description" content="Ideas don't come out of thin air">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Now or never">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/02/27/%E5%90%91%E9%87%8F%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9A%84%E6%B1%82%E5%AF%BC/" class="post-title-link" itemprop="url">向量和矩阵的求导</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-02-27 15:57:18" itemprop="dateCreated datePublished" datetime="2022-02-27T15:57:18+08:00">2022-02-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-03-01 00:53:53" itemprop="dateModified" datetime="2022-03-01T00:53:53+08:00">2022-03-01</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">数学</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/02/27/%E5%90%91%E9%87%8F%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9A%84%E6%B1%82%E5%AF%BC/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/02/27/%E5%90%91%E9%87%8F%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9A%84%E6%B1%82%E5%AF%BC/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>向量以及矩阵的求导在日常的学习和项目中经常会遇到，但是掌握的并不熟练，最近在复习非线性优化时找到了一个讲向量和矩阵求导的<a target="_blank" rel="noopener" href="https://www.cnblogs.com/pinard/tag/%E7%9F%A9%E9%98%B5%E6%B1%82%E5%AF%BC%20%20%E5%90%91%E9%87%8F%E6%B1%82%E5%AF%BC/">博客专栏</a>，觉得讲的挺好，摘录了部分重点，主要包括分子/分母布局、求导的方法以及链式求导法则等。求导时要记住的两个要点是：<strong>根据定义推导 + 根据维度推导求导结果的形式</strong><br>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/02/27/%E5%90%91%E9%87%8F%E5%92%8C%E7%9F%A9%E9%98%B5%E7%9A%84%E6%B1%82%E5%AF%BC/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
 
   
   <nav class="pagination">
@@ -1286,7 +1166,7 @@ exp</script><p>的泰勒展开式，可以直观地描述 exponential map 的过
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">46</span>
+          <span class="site-state-item-count">45</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
